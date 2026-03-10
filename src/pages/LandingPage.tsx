@@ -556,7 +556,7 @@ export default function LandingPage() {
               Pare de perder editais. Comece a captar com inteligência.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-              Junte-se às organizações que estão profissionalizando a captação de recursos públicos no Brasil.
+              Junte-se às organizações que estão profissionalizando a captação e gestão de projetos com inteligência artificial.
             </p>
             <div className="mt-10">
               <Button
