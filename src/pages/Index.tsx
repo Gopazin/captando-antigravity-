@@ -1,31 +1,48 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FolderKanban, FileText, Clock, TrendingUp, ArrowRight } from "lucide-react";
-import { mockProjects, mockGrants } from "@/data/mock";
-import { STATUS_LABELS, AREA_LABELS } from "@/types";
+import { FolderKanban, FileText, Clock, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const statusColors: Record<string, string> = {
-  rascunho: "bg-muted text-muted-foreground",
-  em_revisao: "bg-warning/15 text-warning border-warning/30",
-  finalizado: "bg-accent/15 text-accent border-accent/30",
-};
+import { supabase } from "@/integrations/supabase/client";
+import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, type Project } from "@/hooks/useProjects";
 
 const Index = () => {
   const navigate = useNavigate();
-  const activeProjects = mockProjects.filter((p) => p.status !== "finalizado");
-  const upcomingGrants = mockGrants
-    .filter((g) => new Date(g.deadline) > new Date())
-    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-    .slice(0, 3);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [grants, setGrants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [projRes, grantRes] = await Promise.all([
+        supabase.from("projects").select("*").neq("status", "arquivado").order("updated_at", { ascending: false }).limit(5),
+        supabase.from("grants").select("*").eq("is_active", true).order("deadline", { ascending: true }).limit(5),
+      ]);
+      setProjects((projRes.data as unknown as Project[]) || []);
+      setGrants(grantRes.data || []);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const activeProjects = projects.filter((p) => !["concluido", "arquivado"].includes(p.status));
+  const upcomingGrants = grants.filter((g) => g.deadline && new Date(g.deadline) > new Date());
 
   const stats = [
     { label: "Projetos Ativos", value: activeProjects.length, icon: FolderKanban, color: "text-primary" },
-    { label: "Editais Disponíveis", value: mockGrants.length, icon: FileText, color: "text-accent" },
+    { label: "Editais Disponíveis", value: grants.length, icon: FileText, color: "text-accent" },
     { label: "Prazos Próximos", value: upcomingGrants.length, icon: Clock, color: "text-warning" },
-    { label: "Finalizados", value: mockProjects.filter((p) => p.status === "finalizado").length, icon: TrendingUp, color: "text-accent" },
+    { label: "Concluídos", value: projects.filter((p) => p.status === "concluido").length, icon: TrendingUp, color: "text-accent" },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -59,17 +76,21 @@ const Index = () => {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {mockProjects.map((project) => (
-              <div key={project.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{project.title}</p>
-                  <p className="text-sm text-muted-foreground">Atualizado em {new Date(project.updatedAt).toLocaleDateString("pt-BR")}</p>
+            {projects.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum projeto ainda</p>
+            ) : (
+              projects.slice(0, 5).map((project) => (
+                <div key={project.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate("/projetos")}>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{project.title}</p>
+                    <p className="text-sm text-muted-foreground">Atualizado em {new Date(project.updated_at).toLocaleDateString("pt-BR")}</p>
+                  </div>
+                  <Badge variant="outline" className={PROJECT_STATUS_COLORS[project.status]}>
+                    {PROJECT_STATUS_LABELS[project.status]}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className={statusColors[project.status]}>
-                  {STATUS_LABELS[project.status]}
-                </Badge>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -81,20 +102,24 @@ const Index = () => {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {upcomingGrants.map((grant) => {
-              const daysLeft = Math.ceil((new Date(grant.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-              return (
-                <div key={grant.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{grant.title}</p>
-                    <p className="text-sm text-muted-foreground">{AREA_LABELS[grant.area]} · R$ {grant.maxValue.toLocaleString("pt-BR")}</p>
+            {upcomingGrants.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum prazo próximo</p>
+            ) : (
+              upcomingGrants.map((grant) => {
+                const daysLeft = Math.ceil((new Date(grant.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                return (
+                  <div key={grant.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate("/editais")}>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{grant.title}</p>
+                      <p className="text-sm text-muted-foreground">{grant.organization}</p>
+                    </div>
+                    <Badge variant="outline" className={daysLeft <= 15 ? "bg-destructive/15 text-destructive border-destructive/30" : "bg-accent/15 text-accent border-accent/30"}>
+                      {daysLeft}d restantes
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className={daysLeft <= 15 ? "bg-destructive/15 text-destructive border-destructive/30" : "bg-accent/15 text-accent border-accent/30"}>
-                    {daysLeft}d restantes
-                  </Badge>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </CardContent>
         </Card>
       </div>
