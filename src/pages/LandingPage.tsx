@@ -32,7 +32,7 @@ const fadeUp = {
 };
 
 const stats = [
-  { value: "R$ 12B+", label: "Disponíveis em editais públicos/ano" },
+  { value: "R$ 12B+", label: "Disponíveis em editais abertos/ano" },
   { value: "72%", label: "Dos projetos são reprovados por erros formais" },
   { value: "3x", label: "Mais rápido com assistência de IA" },
   { value: "100%", label: "Compliance na prestação de contas" },
@@ -53,7 +53,7 @@ const painPoints = [
   },
   {
     icon: AlertTriangle,
-    title: "Um erro no compliance pode devolver milhões ao governo",
+    title: "Um erro no compliance pode custar o projeto inteiro",
     description:
       "Prestação de contas, rubricas, cronogramas de execução. A burocracia é implacável e qualquer deslize gera sanções graves.",
   },
@@ -126,7 +126,7 @@ const aiCapabilities = [
   {
     title: "Consultor de Captação 24/7",
     description:
-      "Um agente de IA especializado em captação de recursos públicos, disponível a qualquer momento para tirar dúvidas e orientar decisões.",
+      "Um agente de IA especializado em captação de recursos, disponível a qualquer momento para tirar dúvidas e orientar decisões estratégicas.",
     icon: BrainCircuit,
   },
 ];
@@ -218,8 +218,8 @@ export default function LandingPage() {
             className="mx-auto max-w-4xl text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            Captação inteligente e gestão segura de{" "}
-            <span className="text-accent">recursos públicos</span>
+            IA de ponta do edital à{" "}
+            <span className="text-accent">prestação de contas</span>
           </motion.h1>
 
           <motion.p
@@ -229,8 +229,8 @@ export default function LandingPage() {
             custom={2}
             className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
           >
-            Encontre editais automaticamente, gere projetos com IA e gerencie todo o ciclo de captação — 
-            da oportunidade à prestação de contas — em uma única plataforma.
+            Encontre editais automaticamente, elabore projetos com IA e gerencie todo o ciclo de captação — 
+            da oportunidade à prestação de contas — em uma única plataforma inteligente.
           </motion.p>
 
           <motion.div
@@ -283,7 +283,7 @@ export default function LandingPage() {
               Se você trabalha com captação de recursos, já sentiu essas dores
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              A captação de recursos públicos no Brasil é um processo complexo, burocrático e cheio de armadilhas. Nós entendemos cada uma delas.
+              A captação de recursos é um processo complexo, burocrático e cheio de armadilhas. Nós entendemos cada uma delas.
             </p>
           </div>
 
@@ -417,7 +417,7 @@ export default function LandingPage() {
             Feito para quem leva captação a sério
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            Prefeituras, ONGs, associações, fundações e empresas já estão transformando a forma como captam e gerem recursos públicos.
+            Prefeituras, ONGs, associações, fundações e empresas já estão transformando a forma como captam e gerenciam seus projetos.
           </p>
 
           <div className="mx-auto mt-16 grid max-w-4xl gap-8 md:grid-cols-3">
@@ -556,7 +556,7 @@ export default function LandingPage() {
               Pare de perder editais. Comece a captar com inteligência.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-              Junte-se às organizações que estão profissionalizando a captação de recursos públicos no Brasil.
+              Junte-se às organizações que estão profissionalizando a captação e gestão de projetos com inteligência artificial.
             </p>
             <div className="mt-10">
               <Button

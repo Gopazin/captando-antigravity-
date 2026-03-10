@@ -131,7 +131,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && (
           <div className="text-[9px] text-sidebar-foreground/30 leading-tight">
-            © 2026 Captando. Captação inteligente e gestão segura de recursos públicos.
+            © 2026 Captando. IA de ponta do edital à prestação de contas.
           </div>
         )}
       </SidebarFooter>
