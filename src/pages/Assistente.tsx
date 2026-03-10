@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User } from "lucide-react";
-import { mockGrants, mockOrganization } from "@/data/mock";
-import { AREA_LABELS } from "@/types";
+import { mockOrganization } from "@/data/mock";
+import { AREA_LABELS, GrantArea } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
