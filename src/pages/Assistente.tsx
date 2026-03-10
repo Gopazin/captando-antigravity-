@@ -202,9 +202,9 @@ const Assistente = () => {
                   <SelectValue placeholder="Selecione um edital" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockGrants.map((g) => (
+                  {grants.map((g) => (
                     <SelectItem key={g.id} value={g.id}>
-                      {g.title} — {AREA_LABELS[g.area]}
+                      {g.title} — {AREA_LABELS[g.area as GrantArea] || g.area}
                     </SelectItem>
                   ))}
                 </SelectContent>
