@@ -218,8 +218,8 @@ export default function LandingPage() {
             className="mx-auto max-w-4xl text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            Captação inteligente e gestão segura de{" "}
-            <span className="text-accent">recursos públicos</span>
+            IA de ponta do edital à{" "}
+            <span className="text-accent">prestação de contas</span>
           </motion.h1>
 
           <motion.p
