@@ -32,7 +32,7 @@ const fadeUp = {
 };
 
 const stats = [
-  { value: "R$ 12B+", label: "Disponíveis em editais públicos/ano" },
+  { value: "R$ 12B+", label: "Disponíveis em editais abertos/ano" },
   { value: "72%", label: "Dos projetos são reprovados por erros formais" },
   { value: "3x", label: "Mais rápido com assistência de IA" },
   { value: "100%", label: "Compliance na prestação de contas" },
