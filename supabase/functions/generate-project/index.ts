@@ -11,12 +11,21 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const { organization, grant, briefing } = await req.json();
+    const { organization, grant, briefing, documentBase64, documentName } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `Você é um especialista em elaboração de projetos sociais e culturais para captação de recursos no Brasil.
+    const hasDocument = !!documentBase64;
+
+    const systemPrompt = `Você é um especialista em elaboração de projetos para captação de recursos no Brasil.
 Seu trabalho é gerar projetos estruturados e profissionais com base nos dados da organização, no edital alvo e na ideia do usuário.
+
+${hasDocument ? `IMPORTANTE: O usuário enviou um documento PDF como base/referência ("${documentName || 'documento.pdf'}"). Você DEVE usar esse documento como a principal referência e fundação para construir o projeto. Analise profundamente o conteúdo do documento e:
+- Siga a estrutura e requisitos indicados no documento
+- Utilize dados, critérios e diretrizes que o documento apresenta
+- Alinhe o projeto às exigências específicas do documento
+- Incorpore terminologias e padrões que o documento utiliza
+O documento enviado é a BASE PRINCIPAL do projeto. O briefing do usuário complementa.` : ''}
 
 REGRAS:
 - Escreva em português brasileiro formal e técnico
@@ -48,7 +57,28 @@ Você DEVE responder EXCLUSIVAMENTE com uma chamada à função generate_project
 ## Ideia do Usuário (Briefing)
 ${briefing}
 
-Gere um projeto completo e estruturado combinando esses três elementos.`;
+${hasDocument ? `\n## Documento Base Enviado
+O documento PDF "${documentName}" foi anexado acima. Use-o como a BASE PRINCIPAL para construir o projeto, seguindo sua estrutura, requisitos e diretrizes.` : ''}
+
+Gere um projeto completo e estruturado combinando esses elementos.`;
+
+    // Build messages array
+    const userContent: any[] = [];
+
+    // If document is provided, add it as a file part for Gemini
+    if (hasDocument) {
+      userContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:application/pdf;base64,${documentBase64}`,
+        },
+      });
+    }
+
+    userContent.push({
+      type: "text",
+      text: userPrompt,
+    });
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -59,10 +89,10 @@ Gere um projeto completo e estruturado combinando esses três elementos.`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
+            { role: "user", content: userContent },
           ],
           tools: [
             {
