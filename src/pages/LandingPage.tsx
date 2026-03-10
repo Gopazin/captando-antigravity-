@@ -126,7 +126,7 @@ const aiCapabilities = [
   {
     title: "Consultor de Captação 24/7",
     description:
-      "Um agente de IA especializado em captação de recursos públicos, disponível a qualquer momento para tirar dúvidas e orientar decisões.",
+      "Um agente de IA especializado em captação de recursos, disponível a qualquer momento para tirar dúvidas e orientar decisões estratégicas.",
     icon: BrainCircuit,
   },
 ];
