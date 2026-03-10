@@ -229,8 +229,8 @@ export default function LandingPage() {
             custom={2}
             className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
           >
-            Encontre editais automaticamente, gere projetos com IA e gerencie todo o ciclo de captação — 
-            da oportunidade à prestação de contas — em uma única plataforma.
+            Encontre editais automaticamente, elabore projetos com IA e gerencie todo o ciclo de captação — 
+            da oportunidade à prestação de contas — em uma única plataforma inteligente.
           </motion.p>
 
           <motion.div
