@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User } from "lucide-react";
+import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User, Upload, FileText, X } from "lucide-react";
 import { mockOrganization } from "@/data/mock";
 import { AREA_LABELS, GrantArea } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,12 @@ const Assistente = () => {
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
 
+  // PDF upload state
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const fetchGrants = async () => {
       const { data } = await supabase.from("grants").select("*").eq("is_active", true).order("created_at", { ascending: false });
@@ -55,6 +61,37 @@ const Assistente = () => {
     fetchGrants();
   }, []);
 
+  const handlePdfSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      toast.error("Apenas arquivos PDF são aceitos.");
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 20MB.");
+      return;
+    }
+
+    setPdfFile(file);
+
+    // Convert to base64 for sending to edge function
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      setPdfBase64(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePdf = () => {
+    setPdfFile(null);
+    setPdfBase64(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGenerationPhase(0);
@@ -62,21 +99,29 @@ const Assistente = () => {
     const grant = grants.find((g) => g.id === selectedGrant);
     if (!grant) return;
 
-    // Animate phases
     const phaseTimer1 = setTimeout(() => setGenerationPhase(1), 1000);
     const phaseTimer2 = setTimeout(() => setGenerationPhase(2), 2000);
+    const phaseTimer3 = setTimeout(() => setGenerationPhase(3), 3500);
 
     try {
+      const body: Record<string, unknown> = {
+        organization: mockOrganization,
+        grant,
+        briefing,
+      };
+
+      if (pdfBase64) {
+        body.documentBase64 = pdfBase64;
+        body.documentName = pdfFile?.name || "documento.pdf";
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-project", {
-        body: {
-          organization: mockOrganization,
-          grant,
-          briefing,
-        },
+        body,
       });
 
       clearTimeout(phaseTimer1);
       clearTimeout(phaseTimer2);
+      clearTimeout(phaseTimer3);
 
       if (error) {
         console.error("Generation error:", error);
@@ -135,7 +180,6 @@ const Assistente = () => {
       const explanation = data.explanation || "Alterações aplicadas!";
       setChatMessages((prev) => [...prev, { role: "assistant", content: explanation }]);
 
-      // Apply updates if any
       if (data.type === "update") {
         setGeneratedContent((prev) => ({
           title: data.title || prev.title,
@@ -224,9 +268,54 @@ const Assistente = () => {
         <Card>
           <CardHeader>
             <CardTitle>Ideação do Projeto</CardTitle>
-            <CardDescription>Descreva sua ideia ou peça sugestões à IA.</CardDescription>
+            <CardDescription>Descreva sua ideia e, opcionalmente, envie um documento PDF como base para a IA.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
+            {/* PDF Upload */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-accent" />
+                Documento Base (PDF)
+                <Badge variant="secondary" className="text-[10px] ml-1">Opcional</Badge>
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Envie um edital, projeto de referência ou qualquer documento PDF. A IA usará como base para construir o projeto.
+              </p>
+
+              {!pdfFile ? (
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">Clique para enviar um PDF</p>
+                  <p className="text-xs text-muted-foreground mt-1">Máximo 20MB</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={handlePdfSelect}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 p-4 border rounded-lg bg-accent/5 border-accent/20">
+                  <FileText className="h-8 w-8 text-accent shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{pdfFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                      {pdfBase64 && <span className="text-accent ml-2">✓ Pronto para envio</span>}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={removePdf} className="shrink-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Briefing */}
             <div className="space-y-2">
               <Label>O que você pretende fazer neste projeto?</Label>
               <Textarea
@@ -258,10 +347,19 @@ const Assistente = () => {
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-accent" />
             <div>
               <p className="text-lg font-semibold">A IA está estruturando seu projeto...</p>
-              <p className="text-sm text-muted-foreground mt-1">Combinando dados do Cofre + Edital + sua ideia</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {pdfFile
+                  ? "Analisando documento base + Cofre + Edital + sua ideia"
+                  : "Combinando dados do Cofre + Edital + sua ideia"}
+              </p>
             </div>
-            <div className="flex justify-center gap-2 mt-4">
-              {["Analisando Cofre", "Lendo Edital", "Gerando Texto"].map((s, i) => (
+            <div className="flex justify-center gap-2 mt-4 flex-wrap">
+              {[
+                "Analisando Cofre",
+                "Lendo Edital",
+                ...(pdfFile ? ["Processando PDF"] : []),
+                "Gerando Texto",
+              ].map((s, i) => (
                 <Badge key={s} variant="secondary" className={i <= generationPhase ? "bg-accent/15 text-accent" : ""}>
                   {i <= generationPhase && <Check className="h-3 w-3 mr-1" />} {s}
                 </Badge>
