@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User } from "lucide-react";
 import { mockGrants, mockOrganization } from "@/data/mock";
 import { AREA_LABELS } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const steps = [
   { id: 1, title: "Seleção", description: "Escolha o perfil e edital" },
@@ -22,6 +24,7 @@ const Assistente = () => {
   const [selectedGrant, setSelectedGrant] = useState("");
   const [briefing, setBriefing] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationPhase, setGenerationPhase] = useState(0);
   const [generatedContent, setGeneratedContent] = useState({
     title: "",
     justification: "",
@@ -30,32 +33,104 @@ const Assistente = () => {
   });
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
+    setGenerationPhase(0);
+
+    const grant = mockGrants.find((g) => g.id === selectedGrant);
+    if (!grant) return;
+
+    // Animate phases
+    const phaseTimer1 = setTimeout(() => setGenerationPhase(1), 1000);
+    const phaseTimer2 = setTimeout(() => setGenerationPhase(2), 2000);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-project", {
+        body: {
+          organization: mockOrganization,
+          grant,
+          briefing,
+        },
+      });
+
+      clearTimeout(phaseTimer1);
+      clearTimeout(phaseTimer2);
+
+      if (error) {
+        console.error("Generation error:", error);
+        toast.error("Erro ao gerar projeto. Tente novamente.");
+        setIsGenerating(false);
+        setCurrentStep(2);
+        return;
+      }
+
+      if (data.error) {
+        toast.error(data.error);
+        setIsGenerating(false);
+        setCurrentStep(2);
+        return;
+      }
+
       setGeneratedContent({
-        title: "Arte na Periferia: Oficinas Culturais para Transformação Social",
-        justification: "A falta de acesso à cultura nas regiões periféricas de São Paulo contribui significativamente para a exclusão social e a limitação de oportunidades para jovens e adultos. Segundo dados do IBGE (2023), apenas 12% dos moradores de comunidades periféricas têm acesso regular a atividades culturais. Este projeto justifica-se pela necessidade urgente de democratizar o acesso à arte e cultura como ferramentas de transformação social, alinhando-se diretamente aos objetivos do edital de fomento cultural.",
-        objectives: "Objetivo Geral: Promover a inclusão cultural e o desenvolvimento artístico em 5 comunidades periféricas de São Paulo.\n\nObjetivos Específicos:\n1. Realizar 20 oficinas semanais de arte (teatro, música, artes visuais e dança)\n2. Atender 500 participantes ao longo de 12 meses\n3. Formar 10 multiplicadores culturais comunitários\n4. Realizar 5 mostras artísticas abertas à comunidade\n5. Criar uma rede de artistas periféricos conectada digitalmente",
-        methodology: "O projeto será desenvolvido em 4 fases:\n\n1. Mobilização (Meses 1-2): Articulação com lideranças comunitárias, mapeamento de espaços e inscrição de participantes.\n\n2. Execução (Meses 3-10): Realização das oficinas com metodologia participativa, utilizando técnicas de arte-educação e pedagogia do oprimido.\n\n3. Culminância (Meses 11-12): Organização de mostras artísticas, documentação audiovisual e formação de multiplicadores.\n\n4. Avaliação: Acompanhamento contínuo com indicadores quantitativos e qualitativos.",
+        title: data.title || "",
+        justification: data.justification || "",
+        objectives: data.objectives || "",
+        methodology: data.methodology || "",
       });
       setIsGenerating(false);
       setCurrentStep(4);
-    }, 3000);
+      toast.success("Projeto gerado com sucesso!");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Erro inesperado. Tente novamente.");
+      setIsGenerating(false);
+      setCurrentStep(2);
+    }
   };
 
-  const handleSendChat = () => {
-    if (!chatInput.trim()) return;
+  const handleSendChat = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
+
     const userMsg = { role: "user" as const, content: chatInput };
     setChatMessages((prev) => [...prev, userMsg]);
     setChatInput("");
-    setTimeout(() => {
-      setChatMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Entendido! Ajustei o texto conforme solicitado. A justificativa agora está mais técnica, com dados estatísticos adicionais e referências a políticas públicas relevantes." },
-      ]);
-    }, 1500);
+    setIsChatLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("refine-project", {
+        body: {
+          messages: [...chatMessages, userMsg],
+          currentProject: generatedContent,
+        },
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || "Erro ao refinar projeto.");
+        setIsChatLoading(false);
+        return;
+      }
+
+      const explanation = data.explanation || "Alterações aplicadas!";
+      setChatMessages((prev) => [...prev, { role: "assistant", content: explanation }]);
+
+      // Apply updates if any
+      if (data.type === "update") {
+        setGeneratedContent((prev) => ({
+          title: data.title || prev.title,
+          justification: data.justification || prev.justification,
+          objectives: data.objectives || prev.objectives,
+          methodology: data.methodology || prev.methodology,
+        }));
+        toast.success("Projeto atualizado!");
+      }
+    } catch (err) {
+      console.error("Chat error:", err);
+      toast.error("Erro ao processar mensagem.");
+    }
+
+    setIsChatLoading(false);
   };
 
   return (
@@ -85,7 +160,7 @@ const Assistente = () => {
         ))}
       </div>
 
-      {/* Step 1 - Seleção */}
+      {/* Step 1 */}
       {currentStep === 1 && (
         <Card>
           <CardHeader>
@@ -124,7 +199,7 @@ const Assistente = () => {
         </Card>
       )}
 
-      {/* Step 2 - Ideação */}
+      {/* Step 2 */}
       {currentStep === 2 && (
         <Card>
           <CardHeader>
@@ -156,7 +231,7 @@ const Assistente = () => {
         </Card>
       )}
 
-      {/* Step 3 - Estruturação (Loading) */}
+      {/* Step 3 - Loading */}
       {currentStep === 3 && isGenerating && (
         <Card>
           <CardContent className="py-20 text-center space-y-4">
@@ -167,8 +242,8 @@ const Assistente = () => {
             </div>
             <div className="flex justify-center gap-2 mt-4">
               {["Analisando Cofre", "Lendo Edital", "Gerando Texto"].map((s, i) => (
-                <Badge key={s} variant="secondary" className={i <= 1 ? "bg-accent/15 text-accent" : ""}>
-                  {i <= 1 && <Check className="h-3 w-3 mr-1" />} {s}
+                <Badge key={s} variant="secondary" className={i <= generationPhase ? "bg-accent/15 text-accent" : ""}>
+                  {i <= generationPhase && <Check className="h-3 w-3 mr-1" />} {s}
                 </Badge>
               ))}
             </div>
@@ -242,6 +317,14 @@ const Assistente = () => {
                     {msg.role === "user" && <User className="h-5 w-5 text-primary mt-1 shrink-0" />}
                   </div>
                 ))}
+                {isChatLoading && (
+                  <div className="flex gap-2 justify-start">
+                    <Bot className="h-5 w-5 text-accent mt-1 shrink-0" />
+                    <div className="rounded-lg px-3 py-2 text-sm bg-muted">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Input
@@ -249,8 +332,9 @@ const Assistente = () => {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
+                  disabled={isChatLoading}
                 />
-                <Button size="icon" onClick={handleSendChat} className="bg-accent hover:bg-accent/90 shrink-0">
+                <Button size="icon" onClick={handleSendChat} disabled={isChatLoading} className="bg-accent hover:bg-accent/90 shrink-0">
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
