@@ -19,12 +19,24 @@ const steps = [
   { id: 4, title: "Refinamento", description: "Refine o projeto final" },
 ];
 
+interface DbGrant {
+  id: string;
+  title: string;
+  organization: string;
+  area: string;
+  max_value: number;
+  deadline: string | null;
+  eligibility: string;
+  description: string;
+}
+
 const Assistente = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedGrant, setSelectedGrant] = useState("");
   const [briefing, setBriefing] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationPhase, setGenerationPhase] = useState(0);
+  const [grants, setGrants] = useState<DbGrant[]>([]);
   const [generatedContent, setGeneratedContent] = useState({
     title: "",
     justification: "",
