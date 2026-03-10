@@ -12,6 +12,7 @@ import Assistente from "./pages/Assistente";
 import GestaoCompliance from "./pages/GestaoCompliance";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/landing" element={<LandingPage />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/cofre" element={<Cofre />} />
