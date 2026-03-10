@@ -417,7 +417,7 @@ export default function LandingPage() {
             Feito para quem leva captação a sério
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            Prefeituras, ONGs, associações, fundações e empresas já estão transformando a forma como captam e gerem recursos públicos.
+            Prefeituras, ONGs, associações, fundações e empresas já estão transformando a forma como captam e gerenciam seus projetos.
           </p>
 
           <div className="mx-auto mt-16 grid max-w-4xl gap-8 md:grid-cols-3">
