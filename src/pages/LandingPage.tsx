@@ -53,7 +53,7 @@ const painPoints = [
   },
   {
     icon: AlertTriangle,
-    title: "Um erro no compliance pode devolver milhões ao governo",
+    title: "Um erro no compliance pode custar o projeto inteiro",
     description:
       "Prestação de contas, rubricas, cronogramas de execução. A burocracia é implacável e qualquer deslize gera sanções graves.",
   },
