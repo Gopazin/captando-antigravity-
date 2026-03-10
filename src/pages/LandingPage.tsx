@@ -218,8 +218,8 @@ export default function LandingPage() {
             className="mx-auto max-w-4xl text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            IA de ponta do edital à{" "}
-            <span className="text-accent">prestação de contas</span>
+            Capte, elabore e gerencie seus projetos{" "}
+            <span className="text-accent">com IA</span>
           </motion.h1>
 
           <motion.p
