@@ -47,11 +47,19 @@ const Assistente = () => {
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
 
+  useEffect(() => {
+    const fetchGrants = async () => {
+      const { data } = await supabase.from("grants").select("*").eq("is_active", true).order("created_at", { ascending: false });
+      if (data) setGrants(data as DbGrant[]);
+    };
+    fetchGrants();
+  }, []);
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGenerationPhase(0);
 
-    const grant = mockGrants.find((g) => g.id === selectedGrant);
+    const grant = grants.find((g) => g.id === selectedGrant);
     if (!grant) return;
 
     // Animate phases
