@@ -40,7 +40,7 @@ Você DEVE responder EXCLUSIVAMENTE com uma chamada à função generate_project
 - Título: ${grant.title}
 - Organização: ${grant.organization}
 - Área: ${grant.area}
-- Valor máximo: R$ ${grant.maxValue?.toLocaleString("pt-BR")}
+- Valor máximo: R$ ${(grant.maxValue || grant.max_value || 0).toLocaleString("pt-BR")}
 - Prazo: ${grant.deadline}
 - Elegibilidade: ${grant.eligibility}
 - Descrição: ${grant.description}
