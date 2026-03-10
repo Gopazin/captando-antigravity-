@@ -283,7 +283,7 @@ export default function LandingPage() {
               Se você trabalha com captação de recursos, já sentiu essas dores
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              A captação de recursos públicos no Brasil é um processo complexo, burocrático e cheio de armadilhas. Nós entendemos cada uma delas.
+              A captação de recursos é um processo complexo, burocrático e cheio de armadilhas. Nós entendemos cada uma delas.
             </p>
           </div>
 
