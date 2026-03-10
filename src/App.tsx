@@ -9,6 +9,7 @@ import Cofre from "./pages/Cofre";
 import Editais from "./pages/Editais";
 import Projetos from "./pages/Projetos";
 import Assistente from "./pages/Assistente";
+import GestaoCompliance from "./pages/GestaoCompliance";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/editais" element={<Editais />} />
             <Route path="/projetos" element={<Projetos />} />
             <Route path="/assistente" element={<Assistente />} />
+            <Route path="/gestao" element={<GestaoCompliance />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
           </Route>
           <Route path="*" element={<NotFound />} />
