@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User } from "lucide-react";
-import { mockGrants, mockOrganization } from "@/data/mock";
-import { AREA_LABELS } from "@/types";
+import { mockOrganization } from "@/data/mock";
+import { AREA_LABELS, GrantArea } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,12 +19,24 @@ const steps = [
   { id: 4, title: "Refinamento", description: "Refine o projeto final" },
 ];
 
+interface DbGrant {
+  id: string;
+  title: string;
+  organization: string;
+  area: string;
+  max_value: number;
+  deadline: string | null;
+  eligibility: string;
+  description: string;
+}
+
 const Assistente = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedGrant, setSelectedGrant] = useState("");
   const [briefing, setBriefing] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationPhase, setGenerationPhase] = useState(0);
+  const [grants, setGrants] = useState<DbGrant[]>([]);
   const [generatedContent, setGeneratedContent] = useState({
     title: "",
     justification: "",
@@ -35,11 +47,19 @@ const Assistente = () => {
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
 
+  useEffect(() => {
+    const fetchGrants = async () => {
+      const { data } = await supabase.from("grants").select("*").eq("is_active", true).order("created_at", { ascending: false });
+      if (data) setGrants(data as DbGrant[]);
+    };
+    fetchGrants();
+  }, []);
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGenerationPhase(0);
 
-    const grant = mockGrants.find((g) => g.id === selectedGrant);
+    const grant = grants.find((g) => g.id === selectedGrant);
     if (!grant) return;
 
     // Animate phases
@@ -182,9 +202,9 @@ const Assistente = () => {
                   <SelectValue placeholder="Selecione um edital" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockGrants.map((g) => (
+                  {grants.map((g) => (
                     <SelectItem key={g.id} value={g.id}>
-                      {g.title} — {AREA_LABELS[g.area]}
+                      {g.title} — {AREA_LABELS[g.area as GrantArea] || g.area}
                     </SelectItem>
                   ))}
                 </SelectContent>

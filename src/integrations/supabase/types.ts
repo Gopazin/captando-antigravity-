@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      grants: {
+        Row: {
+          area: string
+          created_at: string
+          deadline: string | null
+          description: string | null
+          eligibility: string | null
+          id: string
+          is_active: boolean | null
+          max_value: number | null
+          organization: string
+          raw_content: string | null
+          source_file: string | null
+          source_type: string | null
+          source_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          area?: string
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          eligibility?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_value?: number | null
+          organization: string
+          raw_content?: string | null
+          source_file?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          eligibility?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_value?: number | null
+          organization?: string
+          raw_content?: string | null
+          source_file?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
