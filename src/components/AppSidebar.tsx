@@ -7,10 +7,15 @@ import {
   Settings,
   FolderKanban,
   Crown,
+  ChevronRight,
+  Bot,
+  Columns3,
+  Eye,
+  FileText,
+  CalendarDays,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
@@ -20,21 +25,38 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
-const mainItems = [
+const simpleItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Radar de Editais", url: "/editais", icon: Radar, premium: true },
   { title: "Cofre de Identidade", url: "/cofre", icon: Vault },
-  { title: "Escritório de Projetos", url: "/assistente", icon: Sparkles },
-  { title: "Gestão de Projetos", url: "/projetos", icon: FolderKanban },
-  { title: "Gestão & Compliance", url: "/gestao", icon: ShieldCheck },
+];
+
+const escritorioItems = [
+  { title: "Assistente IA", url: "/escritorio/assistente", icon: Bot },
+  { title: "Kanban", url: "/escritorio/kanban", icon: Columns3 },
+];
+
+const gestaoItems = [
+  { title: "Visão Geral", url: "/gestao-projetos", icon: Eye },
+  { title: "Cronograma", url: "/gestao-projetos/cronograma", icon: CalendarDays },
+  { title: "Documentos", url: "/gestao-projetos/documentos", icon: FileText },
 ];
 
 const bottomItems = [
+  { title: "Gestão & Compliance", url: "/gestao", icon: ShieldCheck },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
@@ -44,6 +66,9 @@ export function AppSidebar() {
   const location = useLocation();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  const escritorioOpen = location.pathname.startsWith("/escritorio");
+  const gestaoProjetosOpen = location.pathname.startsWith("/gestao-projetos");
 
   return (
     <Sidebar collapsible="icon">
@@ -72,7 +97,8 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
+              {/* Simple top items */}
+              {simpleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -98,6 +124,83 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Escritório de Projetos - Expandable */}
+              <Collapsible defaultOpen={escritorioOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip="Escritório de Projetos"
+                      isActive={escritorioOpen}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1">Escritório de Projetos</span>
+                          <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {escritorioItems.map((item) => (
+                        <SidebarMenuSubItem key={item.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(item.url)}>
+                            <NavLink
+                              to={item.url}
+                              className="hover:bg-sidebar-accent/50"
+                              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                            >
+                              <item.icon className="h-3.5 w-3.5" />
+                              <span>{item.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Gestão de Projetos - Expandable */}
+              <Collapsible defaultOpen={gestaoProjetosOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip="Gestão de Projetos"
+                      isActive={gestaoProjetosOpen}
+                    >
+                      <FolderKanban className="h-4 w-4" />
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1">Gestão de Projetos</span>
+                          <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {gestaoItems.map((item) => (
+                        <SidebarMenuSubItem key={item.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(item.url)}>
+                            <NavLink
+                              to={item.url}
+                              end={item.url === "/gestao-projetos"}
+                              className="hover:bg-sidebar-accent/50"
+                              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                            >
+                              <item.icon className="h-3.5 w-3.5" />
+                              <span>{item.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
