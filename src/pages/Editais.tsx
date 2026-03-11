@@ -390,6 +390,12 @@ const Editais = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="fontes">
+          <GrantSourcesDirectory />
+        </TabsContent>
+      </Tabs>
 
       <Sheet open={!!selectedGrant} onOpenChange={(open) => !open && setSelectedGrant(null)}>
         <SheetContent className="sm:max-w-lg">
