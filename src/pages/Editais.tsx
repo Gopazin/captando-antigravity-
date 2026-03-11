@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText, BookOpen } from "lucide-react";
+import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText, BookOpen, File } from "lucide-react";
 import { AREA_LABELS, GrantArea } from "@/types";
 import GrantSourcesDirectory from "@/components/GrantSourcesDirectory";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +60,7 @@ const Editais = () => {
   // Form states
   const [urlInput, setUrlInput] = useState("");
   const [pdfText, setPdfText] = useState("");
+  const [pdfFile, setPdfFile] = useState<globalThis.File | null>(null);
   const [manualForm, setManualForm] = useState({
     title: "", organization: "", area: "social", max_value: "",
     deadline: "", eligibility: "", description: "", source_url: "",
@@ -135,11 +136,41 @@ const Editais = () => {
   };
 
   const handleProcessPdf = async () => {
-    if (!pdfText.trim()) return;
+    if (!pdfText.trim() && !pdfFile) return;
     setIsProcessing(true);
     try {
+      let textToProcess = pdfText.trim();
+
+      // If file uploaded, upload to storage and get text via edge function
+      if (pdfFile) {
+        const fileExt = pdfFile.name.split('.').pop();
+        const fileName = `editais/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("project-documents")
+          .upload(fileName, pdfFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("project-documents")
+          .getPublicUrl(fileName);
+
+        // Send file path to edge function
+        const { data, error } = await supabase.functions.invoke("parse-grant", {
+          body: { filePath: fileName, fileName: pdfFile.name },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        toast.success("Edital processado e salvo com sucesso!");
+        setPdfFile(null);
+        setPdfText("");
+        setDialogOpen(false);
+        fetchGrants();
+        setIsProcessing(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("parse-grant", {
-        body: { pdfText: pdfText.trim() },
+        body: { pdfText: textToProcess },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -149,7 +180,7 @@ const Editais = () => {
       fetchGrants();
     } catch (err) {
       console.error("PDF parse error:", err);
-      toast.error("Erro ao processar PDF. Tente novamente.");
+      toast.error("Erro ao processar arquivo. Tente novamente.");
     }
     setIsProcessing(false);
   };
@@ -222,7 +253,7 @@ const Editais = () => {
                 <Tabs defaultValue="url" className="mt-4">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="url"><Link className="h-4 w-4 mr-1" /> URL</TabsTrigger>
-                    <TabsTrigger value="pdf"><Upload className="h-4 w-4 mr-1" /> Texto PDF</TabsTrigger>
+                    <TabsTrigger value="pdf"><Upload className="h-4 w-4 mr-1" /> Arquivo / PDF</TabsTrigger>
                     <TabsTrigger value="manual"><FileText className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
                   </TabsList>
                   <TabsContent value="url" className="space-y-4 mt-4">
@@ -238,11 +269,52 @@ const Editais = () => {
                   </TabsContent>
                   <TabsContent value="pdf" className="space-y-4 mt-4">
                     <div className="space-y-2">
-                      <Label>Cole o texto extraído do PDF</Label>
-                      <Textarea rows={8} placeholder="Cole aqui o conteúdo do edital em PDF..." value={pdfText} onChange={(e) => setPdfText(e.target.value)} />
+                      <Label>Upload de arquivo</Label>
+                      <div
+                        className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => document.getElementById('edital-file-input')?.click()}
+                      >
+                        <input
+                          id="edital-file-input"
+                          type="file"
+                          accept=".pdf,.doc,.docx,.txt"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 20 * 1024 * 1024) {
+                                toast.error("Arquivo muito grande. Máximo 20MB.");
+                                return;
+                              }
+                              setPdfFile(file);
+                              setPdfText("");
+                            }
+                          }}
+                        />
+                        {pdfFile ? (
+                          <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                            <File className="h-5 w-5 text-primary" />
+                            <span className="font-medium">{pdfFile.name}</span>
+                            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setPdfFile(null); }}>✕</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                            <p className="text-sm text-muted-foreground">Clique para selecionar ou arraste um arquivo</p>
+                            <p className="text-xs text-muted-foreground/70 mt-1">PDF, DOC, DOCX ou TXT (máx. 20MB)</p>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">Cole o texto do edital e a IA extrairá os dados estruturados.</p>
-                    <Button className="w-full" onClick={handleProcessPdf} disabled={isProcessing || !pdfText.trim()}>
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex-1 border-t border-muted-foreground/20" />
+                      <span className="text-xs text-muted-foreground">ou cole o texto</span>
+                      <div className="flex-1 border-t border-muted-foreground/20" />
+                    </div>
+                    <div className="space-y-2">
+                      <Textarea rows={5} placeholder="Cole aqui o conteúdo do edital..." value={pdfText} onChange={(e) => { setPdfText(e.target.value); setPdfFile(null); }} />
+                    </div>
+                    <Button className="w-full" onClick={handleProcessPdf} disabled={isProcessing || (!pdfText.trim() && !pdfFile)}>
                       {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                       Processar com IA
                     </Button>
