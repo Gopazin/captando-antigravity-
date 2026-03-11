@@ -60,6 +60,7 @@ const Editais = () => {
   // Form states
   const [urlInput, setUrlInput] = useState("");
   const [pdfText, setPdfText] = useState("");
+  const [pdfFile, setPdfFile] = useState<globalThis.File | null>(null);
   const [manualForm, setManualForm] = useState({
     title: "", organization: "", area: "social", max_value: "",
     deadline: "", eligibility: "", description: "", source_url: "",
