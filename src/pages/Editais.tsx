@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText, BookOpen, File } from "lucide-react";
+import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText, BookOpen, File, Star } from "lucide-react";
 import { AREA_LABELS, GrantArea } from "@/types";
 import GrantSourcesDirectory from "@/components/GrantSourcesDirectory";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +45,7 @@ interface DbGrant {
   source_url: string | null;
   source_type: string;
   is_active: boolean;
+  is_selected: boolean;
   created_at: string;
 }
 
@@ -79,24 +80,35 @@ const Editais = () => {
       console.error("Error fetching grants:", error);
       toast.error("Erro ao carregar editais");
     } else {
-      setGrants((data as DbGrant[]) || []);
+      setGrants((data as unknown as DbGrant[]) || []);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchGrants();
-
-    // Subscribe to realtime changes
     const channel = supabase
       .channel("grants-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "grants" }, () => {
         fetchGrants();
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const toggleSelected = async (e: React.MouseEvent, grantId: string, currentValue: boolean) => {
+    e.stopPropagation();
+    const { error } = await supabase
+      .from("grants")
+      .update({ is_selected: !currentValue })
+      .eq("id", grantId);
+    if (error) {
+      toast.error("Erro ao atualizar seleção");
+    } else {
+      toast.success(!currentValue ? "Edital marcado como interesse ★" : "Edital desmarcado");
+      setGrants((prev) => prev.map((g) => g.id === grantId ? { ...g, is_selected: !currentValue } : g));
+    }
+  };
 
   const handleAutoSearch = async () => {
     setIsSearching(true);
@@ -141,8 +153,6 @@ const Editais = () => {
     setIsProcessing(true);
     try {
       let textToProcess = pdfText.trim();
-
-      // If file uploaded, upload to storage and get text via edge function
       if (pdfFile) {
         const fileExt = pdfFile.name.split('.').pop();
         const fileName = `editais/${Date.now()}.${fileExt}`;
@@ -150,12 +160,6 @@ const Editais = () => {
           .from("project-documents")
           .upload(fileName, pdfFile);
         if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from("project-documents")
-          .getPublicUrl(fileName);
-
-        // Send file path to edge function
         const { data, error } = await supabase.functions.invoke("parse-grant", {
           body: { filePath: fileName, fileName: pdfFile.name },
         });
@@ -169,7 +173,6 @@ const Editais = () => {
         setIsProcessing(false);
         return;
       }
-
       const { data, error } = await supabase.functions.invoke("parse-grant", {
         body: { pdfText: textToProcess },
       });
@@ -405,6 +408,7 @@ const Editais = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>Edital</TableHead>
                   <TableHead>Área</TableHead>
                   <TableHead>Valor Máximo</TableHead>
@@ -418,6 +422,22 @@ const Editais = () => {
                   const daysLeft = grant.deadline ? Math.ceil((new Date(grant.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                   return (
                     <TableRow key={grant.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedGrant(grant)}>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => toggleSelected(e, grant.id, grant.is_selected)}
+                        >
+                          <Star
+                            className={`h-4 w-4 transition-colors ${
+                              grant.is_selected
+                                ? "fill-yellow-400 text-yellow-500"
+                                : "text-muted-foreground hover:text-yellow-400"
+                            }`}
+                          />
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         <div>
                           <p className="font-medium">{grant.title}</p>
@@ -486,6 +506,18 @@ const Editais = () => {
                   <Badge variant="secondary" className="text-xs">
                     {sourceTypeLabels[selectedGrant.source_type] || selectedGrant.source_type}
                   </Badge>
+                  <Button
+                    variant={selectedGrant.is_selected ? "default" : "outline"}
+                    size="sm"
+                    className="ml-auto"
+                    onClick={(e) => {
+                      toggleSelected(e, selectedGrant.id, selectedGrant.is_selected);
+                      setSelectedGrant({ ...selectedGrant, is_selected: !selectedGrant.is_selected });
+                    }}
+                  >
+                    <Star className={`h-4 w-4 mr-1 ${selectedGrant.is_selected ? "fill-current" : ""}`} />
+                    {selectedGrant.is_selected ? "Selecionado" : "Marcar Interesse"}
+                  </Button>
                 </div>
                 <div className="space-y-4">
                   {selectedGrant.eligibility && (
@@ -527,9 +559,6 @@ const Editais = () => {
                     <ExternalLink className="h-3 w-3" /> Ver edital original
                   </a>
                 )}
-                <Button className="w-full bg-primary" onClick={() => setSelectedGrant(null)}>
-                  Criar Projeto com este Edital
-                </Button>
               </div>
             </>
           )}

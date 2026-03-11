@@ -11,7 +11,7 @@ import { Plus, LayoutGrid, List, Search, Loader2 } from "lucide-react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { ProjectDetail } from "@/components/ProjectDetail";
 import {
-  useProjects, Project, ProjectStatus, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS,
+  useProjects, Project, ProjectStatus, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, KANBAN_COLUMNS,
 } from "@/hooks/useProjects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -184,6 +184,7 @@ const Projetos = () => {
       ) : viewMode === "kanban" ? (
         <KanbanBoard
           projects={filtered}
+          columns={KANBAN_COLUMNS}
           onProjectClick={handleProjectClick}
           onStatusChange={handleStatusChange}
         />
