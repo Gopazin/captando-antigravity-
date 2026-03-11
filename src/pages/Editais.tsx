@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText } from "lucide-react";
+import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText, BookOpen } from "lucide-react";
 import { AREA_LABELS, GrantArea } from "@/types";
+import GrantSourcesDirectory from "@/components/GrantSourcesDirectory";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -192,101 +193,109 @@ const Editais = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Banco de Editais</h1>
-          <p className="text-muted-foreground mt-1">Editais capturados automaticamente e manualmente</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleAutoSearch} disabled={isSearching}>
-            {isSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Globe className="h-4 w-4 mr-2" />}
-            {isSearching ? "Buscando..." : "Buscar Editais"}
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                <Plus className="h-4 w-4 mr-2" /> Novo Edital
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Adicionar Edital</DialogTitle>
-              </DialogHeader>
-              <Tabs defaultValue="url" className="mt-4">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="url"><Link className="h-4 w-4 mr-1" /> URL</TabsTrigger>
-                  <TabsTrigger value="pdf"><Upload className="h-4 w-4 mr-1" /> Texto PDF</TabsTrigger>
-                  <TabsTrigger value="manual"><FileText className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
-                </TabsList>
-                <TabsContent value="url" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>URL do Edital</Label>
-                    <Input placeholder="https://exemplo.gov.br/edital..." value={urlInput} onChange={(e) => setUrlInput(e.target.value)} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">A IA irá acessar a página e extrair os dados automaticamente.</p>
-                  <Button className="w-full" onClick={handleProcessUrl} disabled={isProcessing || !urlInput.trim()}>
-                    {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Processar com IA
-                  </Button>
-                </TabsContent>
-                <TabsContent value="pdf" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>Cole o texto extraído do PDF</Label>
-                    <Textarea rows={8} placeholder="Cole aqui o conteúdo do edital em PDF..." value={pdfText} onChange={(e) => setPdfText(e.target.value)} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Cole o texto do edital e a IA extrairá os dados estruturados.</p>
-                  <Button className="w-full" onClick={handleProcessPdf} disabled={isProcessing || !pdfText.trim()}>
-                    {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Processar com IA
-                  </Button>
-                </TabsContent>
-                <TabsContent value="manual" className="space-y-3 mt-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 space-y-1">
-                      <Label>Título *</Label>
-                      <Input value={manualForm.title} onChange={(e) => setManualForm(p => ({ ...p, title: e.target.value }))} />
-                    </div>
-                    <div className="col-span-2 space-y-1">
-                      <Label>Organização *</Label>
-                      <Input value={manualForm.organization} onChange={(e) => setManualForm(p => ({ ...p, organization: e.target.value }))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Área</Label>
-                      <Select value={manualForm.area} onValueChange={(v) => setManualForm(p => ({ ...p, area: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(AREA_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Valor Máximo (R$)</Label>
-                      <Input type="number" value={manualForm.max_value} onChange={(e) => setManualForm(p => ({ ...p, max_value: e.target.value }))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Prazo</Label>
-                      <Input type="date" value={manualForm.deadline} onChange={(e) => setManualForm(p => ({ ...p, deadline: e.target.value }))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>URL (opcional)</Label>
-                      <Input value={manualForm.source_url} onChange={(e) => setManualForm(p => ({ ...p, source_url: e.target.value }))} />
-                    </div>
-                    <div className="col-span-2 space-y-1">
-                      <Label>Elegibilidade</Label>
-                      <Textarea rows={2} value={manualForm.eligibility} onChange={(e) => setManualForm(p => ({ ...p, eligibility: e.target.value }))} />
-                    </div>
-                    <div className="col-span-2 space-y-1">
-                      <Label>Descrição</Label>
-                      <Textarea rows={3} value={manualForm.description} onChange={(e) => setManualForm(p => ({ ...p, description: e.target.value }))} />
-                    </div>
-                  </div>
-                  <Button className="w-full" onClick={handleManualSave} disabled={isProcessing}>
-                    {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                    Salvar Edital
-                  </Button>
-                </TabsContent>
-              </Tabs>
-            </DialogContent>
-          </Dialog>
+          <p className="text-muted-foreground mt-1">Editais capturados e fontes de financiamento mapeadas</p>
         </div>
       </div>
+
+      <Tabs defaultValue="editais" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="editais"><Globe className="h-4 w-4 mr-2" />Editais Capturados</TabsTrigger>
+          <TabsTrigger value="fontes"><BookOpen className="h-4 w-4 mr-2" />Fontes de Editais</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="editais" className="space-y-4">
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleAutoSearch} disabled={isSearching}>
+              {isSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Globe className="h-4 w-4 mr-2" />}
+              {isSearching ? "Buscando..." : "Buscar Editais"}
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Plus className="h-4 w-4 mr-2" /> Novo Edital
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Adicionar Edital</DialogTitle>
+                </DialogHeader>
+                <Tabs defaultValue="url" className="mt-4">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="url"><Link className="h-4 w-4 mr-1" /> URL</TabsTrigger>
+                    <TabsTrigger value="pdf"><Upload className="h-4 w-4 mr-1" /> Texto PDF</TabsTrigger>
+                    <TabsTrigger value="manual"><FileText className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="url" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label>URL do Edital</Label>
+                      <Input placeholder="https://exemplo.gov.br/edital..." value={urlInput} onChange={(e) => setUrlInput(e.target.value)} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">A IA irá acessar a página e extrair os dados automaticamente.</p>
+                    <Button className="w-full" onClick={handleProcessUrl} disabled={isProcessing || !urlInput.trim()}>
+                      {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                      Processar com IA
+                    </Button>
+                  </TabsContent>
+                  <TabsContent value="pdf" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label>Cole o texto extraído do PDF</Label>
+                      <Textarea rows={8} placeholder="Cole aqui o conteúdo do edital em PDF..." value={pdfText} onChange={(e) => setPdfText(e.target.value)} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Cole o texto do edital e a IA extrairá os dados estruturados.</p>
+                    <Button className="w-full" onClick={handleProcessPdf} disabled={isProcessing || !pdfText.trim()}>
+                      {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                      Processar com IA
+                    </Button>
+                  </TabsContent>
+                  <TabsContent value="manual" className="space-y-3 mt-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2 space-y-1">
+                        <Label>Título *</Label>
+                        <Input value={manualForm.title} onChange={(e) => setManualForm(p => ({ ...p, title: e.target.value }))} />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <Label>Organização *</Label>
+                        <Input value={manualForm.organization} onChange={(e) => setManualForm(p => ({ ...p, organization: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Área</Label>
+                        <Select value={manualForm.area} onValueChange={(v) => setManualForm(p => ({ ...p, area: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(AREA_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Valor Máximo (R$)</Label>
+                        <Input type="number" value={manualForm.max_value} onChange={(e) => setManualForm(p => ({ ...p, max_value: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Prazo</Label>
+                        <Input type="date" value={manualForm.deadline} onChange={(e) => setManualForm(p => ({ ...p, deadline: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>URL (opcional)</Label>
+                        <Input value={manualForm.source_url} onChange={(e) => setManualForm(p => ({ ...p, source_url: e.target.value }))} />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <Label>Elegibilidade</Label>
+                        <Textarea rows={2} value={manualForm.eligibility} onChange={(e) => setManualForm(p => ({ ...p, eligibility: e.target.value }))} />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <Label>Descrição</Label>
+                        <Textarea rows={3} value={manualForm.description} onChange={(e) => setManualForm(p => ({ ...p, description: e.target.value }))} />
+                      </div>
+                    </div>
+                    <Button className="w-full" onClick={handleManualSave} disabled={isProcessing}>
+                      {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                      Salvar Edital
+                    </Button>
+                  </TabsContent>
+                </Tabs>
+              </DialogContent>
+            </Dialog>
+          </div>
 
       <Card>
         <CardHeader>
@@ -381,6 +390,12 @@ const Editais = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="fontes">
+          <GrantSourcesDirectory />
+        </TabsContent>
+      </Tabs>
 
       <Sheet open={!!selectedGrant} onOpenChange={(open) => !open && setSelectedGrant(null)}>
         <SheetContent className="sm:max-w-lg">
