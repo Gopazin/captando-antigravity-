@@ -39,7 +39,7 @@ export interface Grant {
   id: string;
   title: string;
   organization: string;
-  area: 'cultura' | 'esporte' | 'social' | 'educacao' | 'saude' | 'meio_ambiente';
+  area: 'cultura' | 'esporte' | 'social' | 'educacao' | 'saude' | 'meio_ambiente' | 'tecnologia';
   maxValue: number;
   deadline: string;
   eligibility: string;
