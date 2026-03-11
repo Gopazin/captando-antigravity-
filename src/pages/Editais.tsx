@@ -136,11 +136,41 @@ const Editais = () => {
   };
 
   const handleProcessPdf = async () => {
-    if (!pdfText.trim()) return;
+    if (!pdfText.trim() && !pdfFile) return;
     setIsProcessing(true);
     try {
+      let textToProcess = pdfText.trim();
+
+      // If file uploaded, upload to storage and get text via edge function
+      if (pdfFile) {
+        const fileExt = pdfFile.name.split('.').pop();
+        const fileName = `editais/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("project-documents")
+          .upload(fileName, pdfFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("project-documents")
+          .getPublicUrl(fileName);
+
+        // Send file path to edge function
+        const { data, error } = await supabase.functions.invoke("parse-grant", {
+          body: { filePath: fileName, fileName: pdfFile.name },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        toast.success("Edital processado e salvo com sucesso!");
+        setPdfFile(null);
+        setPdfText("");
+        setDialogOpen(false);
+        fetchGrants();
+        setIsProcessing(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("parse-grant", {
-        body: { pdfText: pdfText.trim() },
+        body: { pdfText: textToProcess },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -150,7 +180,7 @@ const Editais = () => {
       fetchGrants();
     } catch (err) {
       console.error("PDF parse error:", err);
-      toast.error("Erro ao processar PDF. Tente novamente.");
+      toast.error("Erro ao processar arquivo. Tente novamente.");
     }
     setIsProcessing(false);
   };
