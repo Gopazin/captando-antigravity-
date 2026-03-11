@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type ProjectStatus = "ideacao" | "elaboracao" | "revisao" | "submissao" | "aprovado" | "em_execucao" | "concluido" | "arquivado";
+export type ProjectStatus = "ideacao" | "elaboracao" | "revisao" | "submissao" | "aguardando_resultado" | "aprovado" | "em_execucao" | "prestacao_contas" | "concluido" | "reprovado" | "arquivado";
 export type TaskStatus = "pendente" | "em_andamento" | "concluida" | "bloqueada";
 export type TaskPriority = "baixa" | "media" | "alta" | "urgente";
 
@@ -51,11 +51,14 @@ export interface ProjectNote {
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   ideacao: "Ideação",
   elaboracao: "Elaboração",
-  revisao: "Revisão",
+  revisao: "Revisão Interna",
   submissao: "Submissão",
+  aguardando_resultado: "Aguardando Resultado",
   aprovado: "Aprovado",
   em_execucao: "Em Execução",
+  prestacao_contas: "Prestação de Contas",
   concluido: "Concluído",
+  reprovado: "Reprovado",
   arquivado: "Arquivado",
 };
 
@@ -64,9 +67,12 @@ export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
   elaboracao: "bg-amber-100 text-amber-700 border-amber-200",
   revisao: "bg-purple-100 text-purple-700 border-purple-200",
   submissao: "bg-cyan-100 text-cyan-700 border-cyan-200",
+  aguardando_resultado: "bg-yellow-100 text-yellow-700 border-yellow-200",
   aprovado: "bg-green-100 text-green-700 border-green-200",
   em_execucao: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  prestacao_contas: "bg-indigo-100 text-indigo-700 border-indigo-200",
   concluido: "bg-teal-100 text-teal-700 border-teal-200",
+  reprovado: "bg-red-100 text-red-700 border-red-200",
   arquivado: "bg-gray-100 text-gray-500 border-gray-200",
 };
 
@@ -77,8 +83,19 @@ export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
   urgente: "bg-red-100 text-red-600",
 };
 
+// Pre-approval columns for Escritório Kanban
+export const ESCRITORIO_COLUMNS: ProjectStatus[] = [
+  "elaboracao", "revisao", "submissao", "aguardando_resultado",
+];
+
+// Post-approval columns for Gestão
+export const GESTAO_COLUMNS: ProjectStatus[] = [
+  "aprovado", "em_execucao", "prestacao_contas", "concluido",
+];
+
+// Legacy: all columns (kept for backward compat)
 export const KANBAN_COLUMNS: ProjectStatus[] = [
-  "ideacao", "elaboracao", "revisao", "submissao", "aprovado", "em_execucao", "concluido",
+  "elaboracao", "revisao", "submissao", "aguardando_resultado", "aprovado", "em_execucao", "prestacao_contas", "concluido",
 ];
 
 export function useProjects() {
@@ -120,7 +137,6 @@ export function useProjects() {
       toast.error("Erro ao atualizar status");
       return false;
     }
-    // Add note
     await supabase.from("project_notes").insert({
       project_id: projectId,
       content: `Status alterado para "${PROJECT_STATUS_LABELS[status]}"`,

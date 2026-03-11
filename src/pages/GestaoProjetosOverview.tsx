@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,15 +10,12 @@ import {
   Project,
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
-  KANBAN_COLUMNS,
+  GESTAO_COLUMNS,
 } from "@/hooks/useProjects";
 import {
   Search,
   Loader2,
   Calendar,
-  FileText,
-  ImageIcon,
-  Receipt,
   ArrowRight,
   FolderOpen,
 } from "lucide-react";
@@ -29,22 +25,30 @@ const GestaoProjetosOverview = () => {
   const { projects, loading } = useProjects();
   const [search, setSearch] = useState("");
 
-  const filtered = projects.filter(
+  // Only post-approval projects
+  const gestaoProjects = projects.filter((p) =>
+    GESTAO_COLUMNS.includes(p.status) || p.status === "reprovado"
+  );
+
+  const filtered = gestaoProjects.filter(
     (p) =>
       p.title.toLowerCase().includes(search.toLowerCase()) ||
       p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const projectsByStatus = KANBAN_COLUMNS.reduce((acc, status) => {
+  const projectsByStatus = GESTAO_COLUMNS.reduce((acc, status) => {
     acc[status] = filtered.filter((p) => p.status === status);
     return acc;
   }, {} as Record<string, Project[]>);
 
+  // Add reprovado separately
+  const reprovados = filtered.filter((p) => p.status === "reprovado");
+
   const stats = {
-    total: projects.length,
-    active: projects.filter((p) => !["concluido", "arquivado"].includes(p.status)).length,
-    concluded: projects.filter((p) => p.status === "concluido").length,
-    avgProgress: projects.length > 0 ? Math.round(projects.reduce((a, p) => a + p.progress, 0) / projects.length) : 0,
+    total: gestaoProjects.length,
+    active: gestaoProjects.filter((p) => ["aprovado", "em_execucao"].includes(p.status)).length,
+    concluded: gestaoProjects.filter((p) => p.status === "concluido").length,
+    avgProgress: gestaoProjects.length > 0 ? Math.round(gestaoProjects.reduce((a, p) => a + p.progress, 0) / gestaoProjects.length) : 0,
   };
 
   return (
@@ -52,7 +56,7 @@ const GestaoProjetosOverview = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Gestão de Projetos</h1>
         <p className="text-muted-foreground mt-1">
-          Acompanhe a execução, documentação e cronograma de cada projeto
+          Acompanhe projetos aprovados: execução, prestação de contas e conclusão
         </p>
       </div>
 
@@ -103,11 +107,11 @@ const GestaoProjetosOverview = () => {
         <Tabs defaultValue="por-etapa">
           <TabsList>
             <TabsTrigger value="por-etapa">Por Etapa</TabsTrigger>
-            <TabsTrigger value="todos">Todos os Projetos</TabsTrigger>
+            <TabsTrigger value="todos">Todos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="por-etapa" className="space-y-6 mt-4">
-            {KANBAN_COLUMNS.map((status) => {
+            {GESTAO_COLUMNS.map((status) => {
               const statusProjects = projectsByStatus[status] || [];
               if (statusProjects.length === 0) return null;
               return (
@@ -159,11 +163,40 @@ const GestaoProjetosOverview = () => {
                 </div>
               );
             })}
+
+            {/* Reprovados */}
+            {reprovados.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge variant="outline" className={PROJECT_STATUS_COLORS["reprovado"]}>
+                    {PROJECT_STATUS_LABELS["reprovado"]}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">{reprovados.length} projeto(s)</span>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {reprovados.map((project) => (
+                    <Card
+                      key={project.id}
+                      className="cursor-pointer hover:shadow-md transition-all opacity-75 hover:opacity-100"
+                      onClick={() => navigate(`/gestao-projetos/${project.id}`)}
+                    >
+                      <CardContent className="p-4 space-y-2">
+                        <h3 className="font-semibold line-clamp-2">{project.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {project.description || "Sem descrição"}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {filtered.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                <p className="font-medium">Nenhum projeto encontrado</p>
-                <p className="text-sm mt-1">Crie projetos no Escritório de Projetos</p>
+                <p className="font-medium">Nenhum projeto aprovado ainda</p>
+                <p className="text-sm mt-1">Projetos aprovados no Escritório aparecerão aqui</p>
               </div>
             )}
           </TabsContent>

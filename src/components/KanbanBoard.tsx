@@ -1,20 +1,20 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  Project, ProjectStatus, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, KANBAN_COLUMNS,
+  Project, ProjectStatus, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS,
 } from "@/hooks/useProjects";
-import { GripVertical, ArrowRight, Clock } from "lucide-react";
+import { GripVertical, Clock } from "lucide-react";
 import { useState } from "react";
 
 interface KanbanBoardProps {
   projects: Project[];
+  columns: ProjectStatus[];
   onProjectClick: (project: Project) => void;
   onStatusChange: (projectId: string, newStatus: ProjectStatus) => void;
 }
 
-export function KanbanBoard({ projects, onProjectClick, onStatusChange }: KanbanBoardProps) {
+export function KanbanBoard({ projects, columns, onProjectClick, onStatusChange }: KanbanBoardProps) {
   const [draggedProject, setDraggedProject] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null);
 
@@ -42,7 +42,7 @@ export function KanbanBoard({ projects, onProjectClick, onStatusChange }: Kanban
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 min-h-[60vh]">
-      {KANBAN_COLUMNS.map((status) => {
+      {columns.map((status) => {
         const columnProjects = projects.filter((p) => p.status === status);
         const isOver = dragOverColumn === status;
 
