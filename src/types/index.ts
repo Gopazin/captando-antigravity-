@@ -75,6 +75,7 @@ export const AREA_LABELS: Record<GrantArea, string> = {
   educacao: 'Educação',
   saude: 'Saúde',
   meio_ambiente: 'Meio Ambiente',
+  tecnologia: 'Tecnologia',
 };
 
 export const STATUS_LABELS: Record<ProjectStatus, string> = {

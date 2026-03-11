@@ -23,6 +23,7 @@ const areaColors: Record<GrantArea, string> = {
   educacao: "bg-amber-100 text-amber-700 border-amber-200",
   saude: "bg-green-100 text-green-700 border-green-200",
   meio_ambiente: "bg-teal-100 text-teal-700 border-teal-200",
+  tecnologia: "bg-indigo-100 text-indigo-700 border-indigo-200",
 };
 
 const sourceTypeLabels: Record<string, string> = {
