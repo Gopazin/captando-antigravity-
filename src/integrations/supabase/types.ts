@@ -23,6 +23,7 @@ export type Database = {
           eligibility: string | null
           id: string
           is_active: boolean | null
+          is_selected: boolean | null
           max_value: number | null
           organization: string
           raw_content: string | null
@@ -40,6 +41,7 @@ export type Database = {
           eligibility?: string | null
           id?: string
           is_active?: boolean | null
+          is_selected?: boolean | null
           max_value?: number | null
           organization: string
           raw_content?: string | null
@@ -57,6 +59,7 @@ export type Database = {
           eligibility?: string | null
           id?: string
           is_active?: boolean | null
+          is_selected?: boolean | null
           max_value?: number | null
           organization?: string
           raw_content?: string | null
@@ -235,6 +238,9 @@ export type Database = {
         | "em_execucao"
         | "concluido"
         | "arquivado"
+        | "aguardando_resultado"
+        | "prestacao_contas"
+        | "reprovado"
       task_priority: "baixa" | "media" | "alta" | "urgente"
       task_status: "pendente" | "em_andamento" | "concluida" | "bloqueada"
     }
@@ -373,6 +379,9 @@ export const Constants = {
         "em_execucao",
         "concluido",
         "arquivado",
+        "aguardando_resultado",
+        "prestacao_contas",
+        "reprovado",
       ],
       task_priority: ["baixa", "media", "alta", "urgente"],
       task_status: ["pendente", "em_andamento", "concluida", "bloqueada"],
