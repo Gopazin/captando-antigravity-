@@ -253,7 +253,7 @@ const Editais = () => {
                 <Tabs defaultValue="url" className="mt-4">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="url"><Link className="h-4 w-4 mr-1" /> URL</TabsTrigger>
-                    <TabsTrigger value="pdf"><Upload className="h-4 w-4 mr-1" /> Texto PDF</TabsTrigger>
+                    <TabsTrigger value="pdf"><Upload className="h-4 w-4 mr-1" /> Arquivo / PDF</TabsTrigger>
                     <TabsTrigger value="manual"><FileText className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
                   </TabsList>
                   <TabsContent value="url" className="space-y-4 mt-4">
@@ -269,11 +269,52 @@ const Editais = () => {
                   </TabsContent>
                   <TabsContent value="pdf" className="space-y-4 mt-4">
                     <div className="space-y-2">
-                      <Label>Cole o texto extraído do PDF</Label>
-                      <Textarea rows={8} placeholder="Cole aqui o conteúdo do edital em PDF..." value={pdfText} onChange={(e) => setPdfText(e.target.value)} />
+                      <Label>Upload de arquivo</Label>
+                      <div
+                        className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => document.getElementById('edital-file-input')?.click()}
+                      >
+                        <input
+                          id="edital-file-input"
+                          type="file"
+                          accept=".pdf,.doc,.docx,.txt"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 20 * 1024 * 1024) {
+                                toast.error("Arquivo muito grande. Máximo 20MB.");
+                                return;
+                              }
+                              setPdfFile(file);
+                              setPdfText("");
+                            }
+                          }}
+                        />
+                        {pdfFile ? (
+                          <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                            <File className="h-5 w-5 text-primary" />
+                            <span className="font-medium">{pdfFile.name}</span>
+                            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setPdfFile(null); }}>✕</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                            <p className="text-sm text-muted-foreground">Clique para selecionar ou arraste um arquivo</p>
+                            <p className="text-xs text-muted-foreground/70 mt-1">PDF, DOC, DOCX ou TXT (máx. 20MB)</p>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">Cole o texto do edital e a IA extrairá os dados estruturados.</p>
-                    <Button className="w-full" onClick={handleProcessPdf} disabled={isProcessing || !pdfText.trim()}>
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex-1 border-t border-muted-foreground/20" />
+                      <span className="text-xs text-muted-foreground">ou cole o texto</span>
+                      <div className="flex-1 border-t border-muted-foreground/20" />
+                    </div>
+                    <div className="space-y-2">
+                      <Textarea rows={5} placeholder="Cole aqui o conteúdo do edital..." value={pdfText} onChange={(e) => { setPdfText(e.target.value); setPdfFile(null); }} />
+                    </div>
+                    <Button className="w-full" onClick={handleProcessPdf} disabled={isProcessing || (!pdfText.trim() && !pdfFile)}>
                       {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                       Processar com IA
                     </Button>
