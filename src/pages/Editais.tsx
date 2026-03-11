@@ -193,7 +193,18 @@ const Editais = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Banco de Editais</h1>
-          <p className="text-muted-foreground mt-1">Editais capturados automaticamente e manualmente</p>
+          <p className="text-muted-foreground mt-1">Editais capturados e fontes de financiamento mapeadas</p>
+        </div>
+      </div>
+
+      <Tabs defaultValue="editais" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="editais"><Globe className="h-4 w-4 mr-2" />Editais Capturados</TabsTrigger>
+          <TabsTrigger value="fontes"><BookOpen className="h-4 w-4 mr-2" />Fontes de Editais</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="editais" className="space-y-4">
+          <div className="flex justify-end gap-2">
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleAutoSearch} disabled={isSearching}>
