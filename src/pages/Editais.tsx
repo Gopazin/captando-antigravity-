@@ -103,7 +103,7 @@ const Editais = () => {
     toast.info("Buscando editais em fontes governamentais e especializadas...");
     try {
       const { data, error } = await supabase.functions.invoke("search-grants", {
-        body: { areas: ["cultura", "esporte", "social", "educacao", "saude", "meio_ambiente"] },
+        body: { areas: ["cultura", "esporte", "social", "educacao", "saude", "meio_ambiente", "tecnologia"] },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
