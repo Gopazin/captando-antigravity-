@@ -184,6 +184,7 @@ const Projetos = () => {
       ) : viewMode === "kanban" ? (
         <KanbanBoard
           projects={filtered}
+          columns={KANBAN_COLUMNS}
           onProjectClick={handleProjectClick}
           onStatusChange={handleStatusChange}
         />
