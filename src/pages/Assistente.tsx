@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -225,8 +226,10 @@ const Assistente = () => {
       </div>
 
       {/* Step 1 */}
+      <AnimatePresence mode="wait">
       {currentStep === 1 && (
-        <Card>
+        <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+        <Card className="glass-card shadow-lg border-primary/10">
           <CardHeader>
             <CardTitle>Seleção de Perfil e Edital</CardTitle>
             <CardDescription>Escolha o perfil da organização e o edital alvo.</CardDescription>
@@ -261,11 +264,13 @@ const Assistente = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
       )}
 
       {/* Step 2 */}
       {currentStep === 2 && (
-        <Card>
+        <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+        <Card className="glass-card shadow-lg border-primary/10">
           <CardHeader>
             <CardTitle>Ideação do Projeto</CardTitle>
             <CardDescription>Descreva sua ideia e, opcionalmente, envie um documento PDF como base para a IA.</CardDescription>
@@ -284,12 +289,12 @@ const Assistente = () => {
 
               {!pdfFile ? (
                 <div
-                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
+                  className="glass-card border-2 border-dashed border-primary/30 rounded-xl p-10 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-all duration-300 group"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">Clique para enviar um PDF</p>
-                  <p className="text-xs text-muted-foreground mt-1">Máximo 20MB</p>
+                  <Upload className="h-10 w-10 mx-auto mb-4 text-primary/60 group-hover:text-accent transition-colors duration-300 group-hover:-translate-y-1 transform" />
+                  <p className="text-base font-semibold text-foreground">Clique para enviar um PDF</p>
+                  <p className="text-sm text-muted-foreground mt-2">Editais, referências, metas ou estatutos (Máximo 20MB)</p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -338,15 +343,18 @@ const Assistente = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
       )}
 
       {/* Step 3 - Loading */}
       {currentStep === 3 && isGenerating && (
-        <Card>
-          <CardContent className="py-20 text-center space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin mx-auto text-accent" />
+        <motion.div key="step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} transition={{ duration: 0.5 }}>
+        <Card className="glass-card shadow-2xl border-primary/30 overflow-hidden relative">
+          <div className="absolute inset-0 shimmer pointer-events-none" />
+          <CardContent className="py-24 text-center space-y-6 relative z-10">
+            <Loader2 className="h-16 w-16 animate-spin mx-auto text-primary" />
             <div>
-              <p className="text-lg font-semibold">A IA está estruturando seu projeto...</p>
+              <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">A IA está estruturando seu projeto...</p>
               <p className="text-sm text-muted-foreground mt-1">
                 {pdfFile
                   ? "Analisando documento base + Cofre + Edital + sua ideia"
@@ -367,13 +375,15 @@ const Assistente = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
       )}
 
       {/* Step 4 - Refinamento */}
       {currentStep === 4 && (
+        <motion.div key="step4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <Card>
+            <Card className="glass-card shadow-lg border-primary/10">
               <CardHeader>
                 <CardTitle>Projeto Gerado</CardTitle>
                 <CardDescription>Edite livremente o conteúdo abaixo.</CardDescription>
@@ -408,7 +418,7 @@ const Assistente = () => {
           </div>
 
           {/* Chat lateral */}
-          <Card className="flex flex-col h-[calc(100vh-16rem)]">
+          <Card className="glass-card shadow-lg border-primary/10 flex flex-col h-[calc(100vh-16rem)]">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Bot className="h-4 w-4 text-accent" /> Chat com IA
@@ -459,7 +469,9 @@ const Assistente = () => {
             </CardContent>
           </Card>
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };

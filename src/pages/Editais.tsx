@@ -152,7 +152,7 @@ const Editais = () => {
     if (!pdfText.trim() && !pdfFile) return;
     setIsProcessing(true);
     try {
-      let textToProcess = pdfText.trim();
+      const textToProcess = pdfText.trim();
       if (pdfFile) {
         const fileExt = pdfFile.name.split('.').pop();
         const fileName = `editais/${Date.now()}.${fileExt}`;

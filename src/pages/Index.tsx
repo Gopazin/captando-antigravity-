@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   FolderKanban, FileText, Clock, TrendingUp, ArrowRight, Loader2,
-  DollarSign, AlertTriangle, Radar, ShieldCheck, Sparkles,
+  DollarSign, AlertTriangle, Radar, ShieldCheck, Sparkles, Activity, CheckCircle2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,9 +54,25 @@ const Index = () => {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Visão geral de recursos captados, editais e gestão</p>
+      {/* Quick Insight Hero */}
+      <div className="relative overflow-hidden rounded-2xl glass-card border-accent/20 bg-gradient-to-br from-sidebar-background/5 via-background to-accent/5 p-8 shadow-sm">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <Badge variant="outline" className="mb-3 text-accent border-accent/30 bg-accent/5">
+              <Sparkles className="h-3 w-3 mr-1" /> IA Ativa
+            </Badge>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">
+              Bem-vindo ao Captando!
+            </h1>
+            <p className="text-muted-foreground max-w-xl">
+              Você tem <strong className="text-foreground">{upcomingGrants.length} oportunidades</strong> no radar e <strong className="text-foreground">{activeProjects.length} projetos</strong> ativos. A IA estruturou seu último projeto <strong className="text-foreground">3x mais rápido</strong>.
+            </p>
+          </div>
+          <Button size="lg" onClick={() => navigate("/escritorio/assistente")} className="bg-accent hover:bg-accent/90 text-accent-foreground shrink-0 shadow-lg shadow-accent/20">
+            <Sparkles className="h-4 w-4 mr-2" /> Estruturar Novo Projeto
+          </Button>
+        </div>
+        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
       </div>
 
       {/* Stats */}
@@ -176,6 +192,53 @@ const Index = () => {
                 );
               })
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <Card className="glass-card shadow-sm border-primary/10 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="h-5 w-5 text-accent" />
+              Atividade Recente
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4 items-start">
+              <div className="bg-accent/10 p-2 rounded-full shrink-0"><CheckCircle2 className="h-4 w-4 text-accent" /></div>
+              <div>
+                <p className="text-sm font-medium">Projeto "Oficina de Cultura" gerado com IA</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Há 2 horas · Assistente de IA</p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-start">
+              <div className="bg-primary/10 p-2 rounded-full shrink-0"><Radar className="h-4 w-4 text-primary" /></div>
+              <div>
+                <p className="text-sm font-medium">5 novos editais encontrados pelo Radar</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Há 5 horas · Webscraping automático</p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-start">
+              <div className="bg-muted p-2 rounded-full shrink-0"><ShieldCheck className="h-4 w-4 text-muted-foreground" /></div>
+              <div>
+                <p className="text-sm font-medium">Cofre de Identidade atualizado</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Ontem · Maria Silva</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-card bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-sm uppercase tracking-wide text-primary">Dica da IA</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed">
+              O edital <strong>"Fomento à Arte"</strong> acaba em 15 dias. Com as informações do seu cofre, posso gerar um pré-projeto de 20 páginas em 30 segundos. Vamos começar?
+            </p>
+            <Button variant="link" className="px-0 text-accent font-semibold mt-2" onClick={() => navigate('/assistente')}>Ver Edital →</Button>
           </CardContent>
         </Card>
       </div>

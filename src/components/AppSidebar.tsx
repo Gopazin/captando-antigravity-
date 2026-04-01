@@ -12,10 +12,11 @@ import {
   Columns3,
   Eye,
   FileText,
-  CalendarDays,
+  ServerCog,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthProvider";
 import {
   Sidebar,
   SidebarContent,
@@ -62,6 +63,7 @@ const bottomItems = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { role } = useAuth();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const isActive = (path: string) =>
@@ -226,6 +228,26 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Super Admin Conditional Item */}
+              {role === "super_admin" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/admin-master")}
+                    tooltip="Super Admin Hub"
+                  >
+                    <NavLink
+                      to="/admin-master"
+                      className="hover:bg-warning/10"
+                      activeClassName="bg-warning/20 text-warning font-medium"
+                    >
+                      <ServerCog className="h-4 w-4 text-warning" />
+                      {!collapsed && <span className="text-warning font-medium">Super Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
