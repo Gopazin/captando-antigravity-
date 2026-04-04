@@ -10,11 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText, BookOpen, File, Star } from "lucide-react";
+import { Plus, Search, ExternalLink, Calendar, DollarSign, ShieldCheck, Upload, Link, RefreshCw, Loader2, Globe, FileText, BookOpen, File, Star, Target } from "lucide-react";
 import { AREA_LABELS, GrantArea } from "@/types";
 import GrantSourcesDirectory from "@/components/GrantSourcesDirectory";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthProvider";
 
 const areaColors: Record<GrantArea, string> = {
   cultura: "bg-purple-100 text-purple-700 border-purple-200",
@@ -50,6 +51,7 @@ interface DbGrant {
 }
 
 const Editais = () => {
+  const { organization } = useAuth();
   const [grants, setGrants] = useState<DbGrant[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -58,6 +60,19 @@ const Editais = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const getMatchScore = (grant: DbGrant) => {
+    if (!organization) return 50;
+    const areas = organization.interested_areas || [];
+    if (areas.length === 0) return 50; // Neutro se não houver perfil definido
+    return areas.includes(grant.area) ? 95 : 30;
+  };
+
+  const getMatchColor = (score: number) => {
+    if (score >= 80) return "text-green-600 bg-green-100";
+    if (score >= 50) return "text-yellow-600 bg-yellow-100";
+    return "text-gray-600 bg-gray-100";
+  };
 
   // Form states
   const [urlInput, setUrlInput] = useState("");
@@ -411,6 +426,7 @@ const Editais = () => {
                   <TableHead className="w-10"></TableHead>
                   <TableHead>Edital</TableHead>
                   <TableHead>Área</TableHead>
+                  <TableHead>Match</TableHead>
                   <TableHead>Valor Máximo</TableHead>
                   <TableHead>Prazo</TableHead>
                   <TableHead>Fonte</TableHead>
@@ -448,6 +464,14 @@ const Editais = () => {
                         <Badge variant="outline" className={areaColors[grant.area as GrantArea] || ""}>
                           {AREA_LABELS[grant.area as GrantArea] || grant.area}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Target className={`h-4 w-4 ${getMatchScore(grant) >= 80 ? 'text-green-500' : 'text-muted-foreground'}`} />
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getMatchColor(getMatchScore(grant))}`}>
+                            {getMatchScore(grant)}%
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="font-medium">
                         {grant.max_value ? `R$ ${Number(grant.max_value).toLocaleString("pt-BR")}` : "—"}

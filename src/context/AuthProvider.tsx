@@ -11,6 +11,8 @@ interface Organization {
   location?: string | null;
   mission?: string | null;
   vision?: string | null;
+  interested_areas?: string[] | null;
+  interested_sources?: string[] | null;
 }
 
 interface AuthContextType {
@@ -76,7 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             cnpj,
             location,
             mission,
-            vision
+            vision,
+            interested_areas,
+            interested_sources
           )
         `)
         .eq("user_id", userId)

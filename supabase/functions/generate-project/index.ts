@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callLLM } from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,9 +13,6 @@ serve(async (req) => {
 
   try {
     const { organization, grant, briefing, documentBase64, documentName } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     const hasDocument = !!documentBase64;
 
     const systemPrompt = `Você é um especialista em elaboração de projetos para captação de recursos no Brasil.
@@ -80,92 +78,70 @@ Gere um projeto completo e estruturado combinando esses elementos.`;
       text: userPrompt,
     });
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+    const tools = [
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userContent },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "generate_project",
+        type: "function",
+        function: {
+          name: "generate_project",
+          description:
+            "Gera um projeto estruturado com título, justificativa, objetivos e metodologia.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "Título criativo e descritivo do projeto",
+              },
+              justification: {
+                type: "string",
                 description:
-                  "Gera um projeto estruturado com título, justificativa, objetivos e metodologia.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    title: {
-                      type: "string",
-                      description: "Título criativo e descritivo do projeto",
-                    },
-                    justification: {
-                      type: "string",
-                      description:
-                        "Justificativa técnica com dados, referências e alinhamento ao edital (mínimo 3 parágrafos)",
-                    },
-                    objectives: {
-                      type: "string",
-                      description:
-                        "Objetivo geral e pelo menos 5 objetivos específicos, formatados com quebras de linha",
-                    },
-                    methodology: {
-                      type: "string",
-                      description:
-                        "Metodologia detalhada em fases com cronograma, formatada com quebras de linha",
-                    },
-                  },
-                  required: [
-                    "title",
-                    "justification",
-                    "objectives",
-                    "methodology",
-                  ],
-                  additionalProperties: false,
-                },
+                  "Justificativa técnica com dados, referências e alinhamento ao edital (mínimo 3 parágrafos)",
+              },
+              objectives: {
+                type: "string",
+                description:
+                  "Objetivo geral e pelo menos 5 objetivos específicos, formatados com quebras de linha",
+              },
+              methodology: {
+                type: "string",
+                description:
+                  "Metodologia detalhada em fases com cronograma, formatada com quebras de linha",
               },
             },
-          ],
-          tool_choice: {
-            type: "function",
-            function: { name: "generate_project" },
+            required: [
+              "title",
+              "justification",
+              "objectives",
+              "methodology",
+            ],
+            additionalProperties: false,
           },
-        }),
-      }
-    );
+        },
+      },
+    ];
 
-    if (!response.ok) {
-      const status = response.status;
+    let data;
+    try {
+      data = await callLLM(
+        systemPrompt, 
+        userContent, 
+        tools, 
+        { type: "function", function: { name: "generate_project" } }
+      );
+    } catch (llmErr: any) {
+      const status = llmErr.message?.includes("429") ? 429 : 500;
       if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", status, t);
       return new Response(
-        JSON.stringify({ error: "Erro ao gerar projeto. Tente novamente." }),
+        JSON.stringify({ error: "Erro ao consultar a API da IA LLM. " + String(llmErr) }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
       return new Response(

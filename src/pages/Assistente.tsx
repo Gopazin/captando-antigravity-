@@ -62,6 +62,32 @@ const Assistente = () => {
   const [pdfBase64, setPdfBase64] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Recommendations state
+  const [isRecommending, setIsRecommending] = useState(false);
+  const [recommendedGrants, setRecommendedGrants] = useState<any[]>([]);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
+  const handleRecommendGrants = async () => {
+    setIsRecommending(true);
+    setShowRecommendations(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("match-grants", {
+        body: { organization: fullOrgData || organization }
+      });
+      if (error || data?.error) {
+        toast.error("Erro ao buscar recomendações.");
+        setShowRecommendations(false);
+      } else {
+        setRecommendedGrants(data.matches || []);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao processar recomendações.");
+      setShowRecommendations(false);
+    }
+    setIsRecommending(false);
+  };
+
   useEffect(() => {
     const fetchGrants = async () => {
       const { data } = await supabase.from("grants").select("*").eq("is_active", true).order("created_at", { ascending: false });
@@ -311,20 +337,65 @@ const Assistente = () => {
                 </p>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Edital Alvo</Label>
-              <Select value={selectedGrant} onValueChange={setSelectedGrant}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um edital" />
-                </SelectTrigger>
-                <SelectContent>
-                  {grants.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {g.title} — {AREA_LABELS[g.area as GrantArea] || g.area}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Edital Alvo</Label>
+                  <Button variant="outline" size="sm" onClick={handleRecommendGrants} disabled={isRecommending}>
+                    {isRecommending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1 text-accent" />}
+                    Sugerir com IA
+                  </Button>
+                </div>
+                <Select value={selectedGrant} onValueChange={setSelectedGrant}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um edital" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {grants.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.title} — {AREA_LABELS[g.area as GrantArea] || g.area}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {showRecommendations && (
+                <div className="p-4 border rounded-lg bg-accent/5 border-accent/20 space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-accent" />
+                    <h3 className="font-semibold text-sm">Editais Recomendados</h3>
+                  </div>
+                  {isRecommending ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                    </div>
+                  ) : recommendedGrants.length > 0 ? (
+                    <div className="space-y-3">
+                      {recommendedGrants.map((match, i) => (
+                        <div key={i} className="flex gap-3 bg-background p-3 rounded-md border shadow-sm">
+                          <div className={`flex flex-col items-center justify-center shrink-0 w-12 h-12 rounded-full ${match.match_percentage >= 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                            <span className="text-xs font-bold">{match.match_percentage}%</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm leading-tight">{match.grant.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1 max-w-[95%]">{match.reason}</p>
+                            <Button 
+                              variant="link" 
+                              className="h-auto p-0 text-xs mt-1 text-accent"
+                              onClick={() => setSelectedGrant(match.grant.id)}
+                            >
+                              Selecionar este edital
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center">Nenhuma recomendação forte encontrada para o seu perfil no momento.</p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex justify-end">
               <Button disabled={!selectedGrant} onClick={() => setCurrentStep(2)}>

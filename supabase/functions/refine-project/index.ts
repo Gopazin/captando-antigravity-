@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callLLM } from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,8 +13,6 @@ serve(async (req) => {
 
   try {
     const { messages, currentProject } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const systemPrompt = `Você é um assistente especialista em elaboração de projetos sociais/culturais para captação de recursos no Brasil.
 
@@ -31,68 +30,47 @@ Quando o usuário pedir alterações:
 Se a alteração afetar apenas uma seção, retorne apenas aquela seção modificada. Se não, retorne todas as seções afetadas.
 Mantenha o tom formal e técnico. Sempre melhore a qualidade do texto.`;
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...messages,
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "update_project_sections",
-                description: "Retorna as seções do projeto que foram atualizadas.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string", description: "Título atualizado (omitir se não mudou)" },
-                    justification: { type: "string", description: "Justificativa atualizada (omitir se não mudou)" },
-                    objectives: { type: "string", description: "Objetivos atualizados (omitir se não mudou)" },
-                    methodology: { type: "string", description: "Metodologia atualizada (omitir se não mudou)" },
-                    explanation: { type: "string", description: "Breve explicação do que foi alterado para o usuário" },
-                  },
-                  required: ["explanation"],
-                  additionalProperties: false,
+    let data;
+    try {
+      data = await callLLM(
+        systemPrompt,
+        messages,
+        [
+          {
+            type: "function",
+            function: {
+              name: "update_project_sections",
+              description: "Retorna as seções do projeto que foram atualizadas.",
+              parameters: {
+                type: "object",
+                properties: {
+                  title: { type: "string", description: "Título atualizado (omitir se não mudou)" },
+                  justification: { type: "string", description: "Justificativa atualizada (omitir se não mudou)" },
+                  objectives: { type: "string", description: "Objetivos atualizados (omitir se não mudou)" },
+                  methodology: { type: "string", description: "Metodologia atualizada (omitir se não mudou)" },
+                  explanation: { type: "string", description: "Breve explicação do que foi alterado" },
                 },
+                required: ["explanation"],
+                additionalProperties: false,
               },
             },
-          ],
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const status = response.status;
+          },
+        ]
+      );
+    } catch (llmErr: any) {
+      const status = llmErr.message?.includes("429") ? 429 : 500;
       if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const t = await response.text();
-      console.error("AI error:", status, t);
       return new Response(
-        JSON.stringify({ error: "Erro ao refinar projeto." }),
+        JSON.stringify({ error: "Erro ao refinar projeto. " + String(llmErr) }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const data = await response.json();
     const message = data.choices?.[0]?.message;
 
     // Check if there's a tool call with updates
