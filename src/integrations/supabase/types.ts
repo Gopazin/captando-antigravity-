@@ -10,14 +10,55 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          new_balance: number
+          organization_id: string
+          previous_balance: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          new_balance: number
+          organization_id: string
+          previous_balance: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          new_balance?: number
+          organization_id?: string
+          previous_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grants: {
         Row: {
           area: string
-          created_at: string
+          created_at: string | null
           deadline: string | null
           description: string | null
           eligibility: string | null
@@ -31,11 +72,11 @@ export type Database = {
           source_type: string | null
           source_url: string | null
           title: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          area?: string
-          created_at?: string
+          area: string
+          created_at?: string | null
           deadline?: string | null
           description?: string | null
           eligibility?: string | null
@@ -49,11 +90,11 @@ export type Database = {
           source_type?: string | null
           source_url?: string | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           area?: string
-          created_at?: string
+          created_at?: string | null
           deadline?: string | null
           description?: string | null
           eligibility?: string | null
@@ -67,28 +108,73 @@ export type Database = {
           source_type?: string | null
           source_url?: string | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      organizations: {
+        Row: {
+          cnpj: string | null
+          created_at: string | null
+          credits_balance: number | null
+          id: string
+          location: string | null
+          mission: string | null
+          name: string
+          plan_type: string | null
+          previous_projects: Json | null
+          stripe_customer_id: string | null
+          team_members: Json | null
+          vision: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string | null
+          credits_balance?: number | null
+          id?: string
+          location?: string | null
+          mission?: string | null
+          name: string
+          plan_type?: string | null
+          previous_projects?: Json | null
+          stripe_customer_id?: string | null
+          team_members?: Json | null
+          vision?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string | null
+          credits_balance?: number | null
+          id?: string
+          location?: string | null
+          mission?: string | null
+          name?: string
+          plan_type?: string | null
+          previous_projects?: Json | null
+          stripe_customer_id?: string | null
+          team_members?: Json | null
+          vision?: string | null
         }
         Relationships: []
       }
       project_notes: {
         Row: {
           content: string
-          created_at: string
+          created_at: string | null
           id: string
           note_type: string | null
           project_id: string
         }
         Insert: {
           content: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           note_type?: string | null
           project_id: string
         }
         Update: {
           content?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           note_type?: string | null
           project_id?: string
@@ -106,42 +192,42 @@ export type Database = {
       project_tasks: {
         Row: {
           assigned_to: string | null
-          created_at: string
+          created_at: string | null
           description: string | null
           due_date: string | null
           id: string
-          priority: Database["public"]["Enums"]["task_priority"]
+          priority: Database["public"]["Enums"]["task_priority"] | null
           project_id: string
           sort_order: number | null
-          status: Database["public"]["Enums"]["task_status"]
+          status: Database["public"]["Enums"]["task_status"] | null
           title: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           assigned_to?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
-          priority?: Database["public"]["Enums"]["task_priority"]
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id: string
           sort_order?: number | null
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: Database["public"]["Enums"]["task_status"] | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           assigned_to?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
-          priority?: Database["public"]["Enums"]["task_priority"]
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string
           sort_order?: number | null
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: Database["public"]["Enums"]["task_status"] | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -158,7 +244,7 @@ export type Database = {
           ai_notes: string | null
           briefing: string | null
           budget: number | null
-          created_at: string
+          created_at: string | null
           description: string | null
           end_date: string | null
           generated_title: string | null
@@ -167,17 +253,18 @@ export type Database = {
           justification: string | null
           methodology: string | null
           objectives: string | null
+          organization_id: string | null
           progress: number | null
           start_date: string | null
-          status: Database["public"]["Enums"]["project_status"]
+          status: Database["public"]["Enums"]["project_status"] | null
           title: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           ai_notes?: string | null
           briefing?: string | null
           budget?: number | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           end_date?: string | null
           generated_title?: string | null
@@ -186,17 +273,18 @@ export type Database = {
           justification?: string | null
           methodology?: string | null
           objectives?: string | null
+          organization_id?: string | null
           progress?: number | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
+          status?: Database["public"]["Enums"]["project_status"] | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           ai_notes?: string | null
           briefing?: string | null
           budget?: number | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           end_date?: string | null
           generated_title?: string | null
@@ -205,11 +293,12 @@ export type Database = {
           justification?: string | null
           methodology?: string | null
           objectives?: string | null
+          organization_id?: string | null
           progress?: number | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
+          status?: Database["public"]["Enums"]["project_status"] | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -219,6 +308,45 @@ export type Database = {
             referencedRelation: "grants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          organization_id: string | null
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          organization_id?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          organization_id?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -226,7 +354,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_credits: {
+        Args: {
+          org_id: string
+          amount: number
+          descrip: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       project_status:

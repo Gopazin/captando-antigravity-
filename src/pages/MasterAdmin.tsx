@@ -5,24 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Coins, Database, Activity, ShieldAlert, Cpu, Search, PlusCircle, MoreHorizontal } from "lucide-react";
+import { Coins, Database, Activity, ShieldAlert, Cpu, Search, PlusCircle, MoreHorizontal, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-interface Organization {
-  id: string;
-  name: string;
-  plan_type: string;
-  credits_balance: number;
-}
+import { Tables } from "@/integrations/supabase/types";
+
+type DbOrganization = Tables<"organizations">;
+type DbTransaction = Tables<"credit_transactions"> & { organizations: { name: string } | null };
 
 export default function MasterAdmin() {
   const { role } = useAuth();
   const navigate = useNavigate();
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState<DbOrganization[]>([]);
+  const [transactions, setTransactions] = useState<DbTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAddingCredits, setIsAddingCredits] = useState(false);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [amountToAdd, setAmountToAdd] = useState("100");
 
   // Redirect if not super admin
   useEffect(() => {
@@ -33,12 +36,12 @@ export default function MasterAdmin() {
 
   useEffect(() => {
     fetchOrganizations();
+    fetchTransactions();
   }, []);
 
   const fetchOrganizations = async () => {
     try {
-      // @ts-expect-error - Ignoring type warning for custom table before type generation
-      const { data, error } = await supabase.from("organizations").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("organizations").select("*").order("name", { ascending: true });
       if (!error && data) {
         setOrganizations(data);
       }
@@ -46,6 +49,57 @@ export default function MasterAdmin() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("credit_transactions")
+        .select("*, organizations(name)")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (!error && data) {
+        setTransactions(data as DbTransaction[]);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAddCredits = async () => {
+    if (!selectedOrgId || !amountToAdd) return;
+    setIsAddingCredits(true);
+    try {
+      const amount = parseInt(amountToAdd);
+      // We use the same consume_credits RPC but with a negative 'consumption' (which is addition) 
+      // OR we make a new RPC. Let's just use a simple update for Admin for now, 
+      // but better to have a dedicated RPC.
+      
+      const { data: org } = await supabase.from("organizations").select("credits_balance").eq("id", selectedOrgId).single();
+      const current = org?.credits_balance || 0;
+      const newVal = current + amount;
+
+      const { error } = await supabase.from("organizations").update({ credits_balance: newVal }).eq("id", selectedOrgId);
+      if (error) throw error;
+
+      await supabase.from("credit_transactions").insert({
+        organization_id: selectedOrgId,
+        amount: amount,
+        previous_balance: current,
+        new_balance: newVal,
+        description: "Recarga manual via Master Admin"
+      });
+
+      toast.success("Créditos adicionados!");
+      fetchOrganizations();
+      fetchTransactions();
+      setSelectedOrgId(null);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Erro ao adicionar créditos";
+      toast.error(errorMsg);
+    } finally {
+      setIsAddingCredits(false);
     }
   };
 
@@ -147,10 +201,22 @@ export default function MasterAdmin() {
                         <TableCell className="font-medium">{org.name}</TableCell>
                         <TableCell>
                           <Badge variant={org.plan_type === 'pro' ? 'default' : 'secondary'} className={org.plan_type === 'pro' ? 'bg-accent/20 text-accent hover:bg-accent/30' : ''}>
-                            {org.plan_type.toUpperCase()}
+                            {(org.plan_type || "free").toUpperCase()}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono font-medium">{org.credits_balance?.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="font-mono font-medium">{org.credits_balance?.toLocaleString()}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-accent"
+                              onClick={() => setSelectedOrgId(org.id)}
+                            >
+                              <PlusCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                         </TableCell>
@@ -215,6 +281,72 @@ export default function MasterAdmin() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Uso Recente */}
+        <Card className="lg:col-span-3 glass-card border-primary/10">
+          <CardHeader>
+            <CardTitle className="text-lg">Transações de Créditos Recentes</CardTitle>
+            <CardDescription>Log global de consumo de IA e recargas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Organização</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="text-right">Movimentação</TableHead>
+                  <TableHead className="text-right">Saldo Final</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(tx.created_at).toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="font-medium">{tx.organizations?.name || "Desconhecida"}</TableCell>
+                    <TableCell className="text-sm">{tx.description}</TableCell>
+                    <TableCell className={`text-right font-bold ${tx.amount > 0 ? "text-success" : "text-destructive"}`}>
+                      {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{tx.new_balance}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Modal Simples para Adicionar Créditos */}
+        {selectedOrgId && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <Card className="w-full max-w-sm shadow-2xl">
+              <CardHeader>
+                <CardTitle>Adicionar Créditos</CardTitle>
+                <CardDescription>
+                  Injetar créditos para <strong>{organizations.find(o => o.id === selectedOrgId)?.name}</strong>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Quantidade</label>
+                  <Input 
+                    type="number" 
+                    value={amountToAdd} 
+                    onChange={(e) => setAmountToAdd(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setSelectedOrgId(null)}>Cancelar</Button>
+                  <Button className="flex-1 bg-accent hover:bg-accent/90" onClick={handleAddCredits} disabled={isAddingCredits}>
+                    {isAddingCredits ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

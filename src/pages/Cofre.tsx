@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,16 +6,79 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, Plus, Trash2, Upload, FileText } from "lucide-react";
-import { mockOrganization } from "@/data/mock";
-import { Organization, PreviousProject, TeamMember, DocumentMeta } from "@/types";
+import { Save, Plus, Trash2, Upload, FileText, Loader2 } from "lucide-react";
+import { PreviousProject, TeamMember } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthProvider";
+
+interface OrgState {
+  id: string;
+  name: string;
+  cnpj: string;
+  location: string;
+  mission: string;
+  vision: string;
+  previousProjects: PreviousProject[];
+  teamMembers: TeamMember[];
+  documents: any[]; // Placeholder for documents
+}
 
 const Cofre = () => {
   const { toast } = useToast();
-  const [org, setOrg] = useState<Organization>(mockOrganization);
+  const { organization } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [org, setOrg] = useState<OrgState>({
+    id: "",
+    name: "",
+    cnpj: "",
+    location: "",
+    mission: "",
+    vision: "",
+    previousProjects: [],
+    teamMembers: [],
+    documents: []
+  });
 
-  const updateField = (field: keyof Organization, value: string) => {
+  useEffect(() => {
+    const fetchOrgData = async () => {
+      if (!organization?.id) return;
+      
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("*")
+        .eq("id", organization.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching organization:", error);
+        toast({ 
+          title: "Erro ao carregar dados", 
+          description: "Não foi possível carregar as informações do cofre.",
+          variant: "destructive"
+        });
+      } else if (data) {
+        setOrg({
+          id: data.id,
+          name: data.name || "",
+          cnpj: data.cnpj || "",
+          location: data.location || "",
+          mission: data.mission || "",
+          vision: data.vision || "",
+          previousProjects: (data.previous_projects as any) || [],
+          teamMembers: (data.team_members as any) || [],
+          documents: [] // Documents logic can be added later with Storage
+        });
+      }
+      setLoading(false);
+    };
+
+    fetchOrgData();
+  }, [organization?.id, toast]);
+
+  const updateField = (field: keyof OrgState, value: string) => {
     setOrg((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -45,10 +108,44 @@ const Cofre = () => {
     setOrg((prev) => ({ ...prev, teamMembers: prev.teamMembers.filter((m) => m.id !== id) }));
   };
 
-  const handleSave = () => {
-    localStorage.setItem("projetofacil_org", JSON.stringify(org));
-    toast({ title: "Dados salvos!", description: "As informações do cofre foram salvas com sucesso." });
+  const handleSave = async () => {
+    if (!organization?.id) return;
+    
+    setSaving(true);
+    const { error } = await supabase
+      .from("organizations")
+      .update({
+        name: org.name,
+        cnpj: org.cnpj,
+        location: org.location,
+        mission: org.mission,
+        vision: org.vision,
+        previous_projects: org.previousProjects,
+        team_members: org.teamMembers,
+      })
+      .eq("id", organization.id);
+
+    if (error) {
+      console.error("Error saving organization:", error);
+      toast({ 
+        title: "Erro ao salvar", 
+        description: "Houve um problema ao atualizar os dados.",
+        variant: "destructive"
+      });
+    } else {
+      toast({ title: "Dados salvos!", description: "As informações do cofre foram salvas com sucesso no banco de dados." });
+    }
+    setSaving(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse">Carregando informações do cofre...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -57,8 +154,13 @@ const Cofre = () => {
           <h1 className="text-3xl font-bold tracking-tight">Cofre da Organização</h1>
           <p className="text-muted-foreground mt-1">Banco de dados fixo da sua entidade</p>
         </div>
-        <Button onClick={handleSave} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-          <Save className="h-4 w-4 mr-2" /> Salvar
+        <Button onClick={handleSave} disabled={saving} className="bg-accent hover:bg-accent/90 text-accent-foreground min-w-[120px]">
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {saving ? "Salvando..." : "Salvar"}
         </Button>
       </div>
 
@@ -204,3 +306,4 @@ const Cofre = () => {
 };
 
 export default Cofre;
+

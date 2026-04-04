@@ -13,6 +13,8 @@ import {
   Eye,
   FileText,
   ServerCog,
+  CalendarDays,
+  Globe,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -59,6 +61,7 @@ const gestaoItems = [
 const bottomItems = [
   { title: "Gestão & Compliance", url: "/gestao", icon: ShieldCheck },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Site Oficial", url: "/landing", icon: Globe },
 ];
 
 export function AppSidebar() {

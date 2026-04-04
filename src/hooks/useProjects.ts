@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthProvider";
 
 export type ProjectStatus = "ideacao" | "elaboracao" | "revisao" | "submissao" | "aguardando_resultado" | "aprovado" | "em_execucao" | "prestacao_contas" | "concluido" | "reprovado" | "arquivado";
 export type TaskStatus = "pendente" | "em_andamento" | "concluida" | "bloqueada";
@@ -11,6 +12,7 @@ export interface Project {
   title: string;
   description: string;
   grant_id: string | null;
+  organization_id: string;
   status: ProjectStatus;
   briefing: string;
   generated_title: string;
@@ -99,14 +101,22 @@ export const KANBAN_COLUMNS: ProjectStatus[] = [
 ];
 
 export function useProjects() {
+  const { organization } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProjects = useCallback(async () => {
+    if (!organization?.id) {
+      setProjects([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const { data, error } = await supabase
       .from("projects")
       .select("*")
+      .eq("organization_id", organization.id)
       .neq("status", "arquivado")
       .order("updated_at", { ascending: false });
 
@@ -117,16 +127,27 @@ export function useProjects() {
       setProjects((data as unknown as Project[]) || []);
     }
     setLoading(false);
-  }, []);
+  }, [organization?.id]);
 
   useEffect(() => {
     fetchProjects();
+    if (!organization?.id) return;
+
     const channel = supabase
       .channel("projects-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, () => fetchProjects())
+      .on(
+        "postgres_changes", 
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "projects",
+          filter: `organization_id=eq.${organization.id}`
+        }, 
+        () => fetchProjects()
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchProjects]);
+  }, [fetchProjects, organization?.id]);
 
   const updateProjectStatus = async (projectId: string, status: ProjectStatus) => {
     const { error } = await supabase
@@ -158,12 +179,23 @@ export function useProjects() {
   };
 
   const createProject = async (project: Partial<Project>) => {
+    if (!organization?.id) {
+      toast.error("Organização não identificada");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from("projects")
-      .insert({ title: project.title || "Novo Projeto", ...project })
+      .insert({ 
+        title: project.title || "Novo Projeto", 
+        organization_id: organization.id,
+        ...project 
+      })
       .select()
       .single();
+
     if (error) {
+      console.error("Error creating project:", error);
       toast.error("Erro ao criar projeto");
       return null;
     }

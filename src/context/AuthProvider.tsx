@@ -5,8 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 interface Organization {
   id: string;
   name: string;
-  plan_type: string;
-  credits_balance: number;
+  plan_type: string | null;
+  credits_balance: number | null;
+  cnpj?: string | null;
+  location?: string | null;
+  mission?: string | null;
+  vision?: string | null;
 }
 
 interface AuthContextType {
@@ -60,17 +64,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserOrgAndRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("user_roles" as any)
-        .select("role, organization_id, organizations(id, name, plan_type, credits_balance)")
+        .from("user_roles")
+        .select(`
+          role, 
+          organization_id, 
+          organizations (
+            id, 
+            name, 
+            plan_type, 
+            credits_balance,
+            cnpj,
+            location,
+            mission,
+            vision
+          )
+        `)
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
-      if (!error && (data as any)) {
-        const anyData = data as any;
-        setRole(anyData.role as AuthContextType["role"]);
-        // Handle joined table typing dynamically
-        const orgData = anyData.organizations as unknown as Organization; 
-        setOrganization(orgData);
+      if (error) throw error;
+
+      if (data) {
+        setRole(data.role as AuthContextType["role"]);
+        if (data.organizations) {
+          setOrganization(data.organizations as unknown as Organization);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch user role/org", e);

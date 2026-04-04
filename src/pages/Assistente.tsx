@@ -7,11 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User, Upload, FileText, X } from "lucide-react";
-import { mockOrganization } from "@/data/mock";
+import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User, Upload, FileText, X, Coins } from "lucide-react";
 import { AREA_LABELS, GrantArea } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthProvider";
+import { useProjects } from "@/hooks/useProjects";
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   { id: 1, title: "Seleção", description: "Escolha o perfil e edital" },
@@ -32,12 +35,17 @@ interface DbGrant {
 }
 
 const Assistente = () => {
+  const { organization } = useAuth();
+  const { createProject } = useProjects();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedGrant, setSelectedGrant] = useState("");
   const [briefing, setBriefing] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generationPhase, setGenerationPhase] = useState(0);
   const [grants, setGrants] = useState<DbGrant[]>([]);
+  const [fullOrgData, setFullOrgData] = useState<Tables<"organizations"> | null>(null);
   const [generatedContent, setGeneratedContent] = useState({
     title: "",
     justification: "",
@@ -59,8 +67,16 @@ const Assistente = () => {
       const { data } = await supabase.from("grants").select("*").eq("is_active", true).order("created_at", { ascending: false });
       if (data) setGrants(data as DbGrant[]);
     };
+    
+    const fetchFullOrg = async () => {
+      if (!organization?.id) return;
+      const { data } = await supabase.from("organizations").select("*").eq("id", organization.id).single();
+      if (data) setFullOrgData(data);
+    };
+
     fetchGrants();
-  }, []);
+    fetchFullOrg();
+  }, [organization?.id]);
 
   const handlePdfSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -94,6 +110,22 @@ const Assistente = () => {
   };
 
   const handleGenerate = async () => {
+    if (!organization?.id) return;
+
+    // Check and consume credits (1 credit per generation)
+    const { data: creditOp, error: creditError } = await supabase.rpc("consume_credits", {
+      org_id: organization.id,
+      amount: 1,
+      descrip: `Geração de projeto: ${grants.find(g => g.id === selectedGrant)?.title || "Edital"}`
+    });
+
+    const typedCreditOp = creditOp as { success: boolean; message?: string; new_balance?: number } | null;
+
+    if (creditError || !typedCreditOp?.success) {
+      toast.error(typedCreditOp?.message || "Erro ao processar créditos. Verifique seu saldo.");
+      return;
+    }
+
     setIsGenerating(true);
     setGenerationPhase(0);
 
@@ -106,7 +138,7 @@ const Assistente = () => {
 
     try {
       const body: Record<string, unknown> = {
-        organization: mockOrganization,
+        organization: fullOrgData || organization,
         grant,
         briefing,
       };
@@ -198,6 +230,35 @@ const Assistente = () => {
     setIsChatLoading(false);
   };
 
+  const handleSaveProject = async () => {
+    if (!generatedContent.title || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      const newProject = await createProject({
+        title: generatedContent.title,
+        description: briefing,
+        grant_id: selectedGrant,
+        status: "elaboracao",
+        briefing: briefing,
+        generated_title: generatedContent.title,
+        justification: generatedContent.justification,
+        objectives: generatedContent.objectives,
+        methodology: generatedContent.methodology,
+      });
+
+      if (newProject) {
+        toast.success("Projeto finalizado e salvo com sucesso!");
+        navigate("/escritorio/kanban");
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      toast.error("Erro ao salvar projeto.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -225,7 +286,6 @@ const Assistente = () => {
         ))}
       </div>
 
-      {/* Step 1 */}
       <AnimatePresence mode="wait">
       {currentStep === 1 && (
         <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
@@ -236,10 +296,19 @@ const Assistente = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Perfil do Cofre</Label>
+              <div className="flex items-center justify-between">
+                <Label>Perfil do Cofre</Label>
+                {organization && (
+                  <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
+                    <Coins className="h-3 w-3 mr-1" /> {fullOrgData?.credits_balance ?? organization.credits_balance ?? 0} créditos
+                  </Badge>
+                )}
+              </div>
               <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-medium">{mockOrganization.name}</p>
-                <p className="text-sm text-muted-foreground">{mockOrganization.cnpj} · {mockOrganization.location}</p>
+                <p className="font-medium">{fullOrgData?.name || organization?.name || "Carregando..."}</p>
+                <p className="text-sm text-muted-foreground">
+                  {fullOrgData?.cnpj || "—"} · {fullOrgData?.location || "—"}
+                </p>
               </div>
             </div>
             <div className="space-y-2">
@@ -267,7 +336,6 @@ const Assistente = () => {
         </motion.div>
       )}
 
-      {/* Step 2 */}
       {currentStep === 2 && (
         <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
         <Card className="glass-card shadow-lg border-primary/10">
@@ -276,7 +344,6 @@ const Assistente = () => {
             <CardDescription>Descreva sua ideia e, opcionalmente, envie um documento PDF como base para a IA.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* PDF Upload */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-accent" />
@@ -320,7 +387,6 @@ const Assistente = () => {
               )}
             </div>
 
-            {/* Briefing */}
             <div className="space-y-2">
               <Label>O que você pretende fazer neste projeto?</Label>
               <Textarea
@@ -346,7 +412,6 @@ const Assistente = () => {
         </motion.div>
       )}
 
-      {/* Step 3 - Loading */}
       {currentStep === 3 && isGenerating && (
         <motion.div key="step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} transition={{ duration: 0.5 }}>
         <Card className="glass-card shadow-2xl border-primary/30 overflow-hidden relative">
@@ -378,7 +443,6 @@ const Assistente = () => {
         </motion.div>
       )}
 
-      {/* Step 4 - Refinamento */}
       {currentStep === 4 && (
         <motion.div key="step4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -409,15 +473,23 @@ const Assistente = () => {
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>
                     <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
                   </Button>
-                  <Button className="bg-accent hover:bg-accent/90 text-accent-foreground flex-1">
-                    <Check className="h-4 w-4 mr-2" /> Finalizar Projeto
+                  <Button 
+                    onClick={handleSaveProject} 
+                    disabled={isSaving}
+                    className="bg-accent hover:bg-accent/90 text-accent-foreground flex-1"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-2" />
+                    )}
+                    {isSaving ? "Finalizando..." : "Finalizar Projeto"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Chat lateral */}
           <Card className="glass-card shadow-lg border-primary/10 flex flex-col h-[calc(100vh-16rem)]">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
