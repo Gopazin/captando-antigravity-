@@ -265,17 +265,17 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={isActive("/admin-master")}
-                    tooltip="Super Admin Hub"
+                    isActive={isActive("/plataforma")}
+                    tooltip="Gestão da Plataforma"
                     className="h-10 rounded-lg group"
                   >
                     <NavLink
-                      to="/admin-master"
+                      to="/plataforma"
                       className="flex items-center gap-3 px-3 w-full"
                       activeClassName="bg-warning/10 text-warning font-semibold border-warning/10 border"
                     >
                       <ServerCog className="h-4 w-4 text-warning shrink-0 group-hover:rotate-45 transition-transform" />
-                      {!collapsed && <span className="text-warning font-medium">Controle Mestre</span>}
+                      {!collapsed && <span className="text-warning font-medium">Painel da Plataforma</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

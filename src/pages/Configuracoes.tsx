@@ -56,9 +56,9 @@ const SUBSCRIPTION_PLANS = [
 ];
 
 const ROLE_LABELS: Record<string, string> = {
-  super_admin: "Super Admin",
-  org_admin: "Administrador",
-  org_member: "Funcionário",
+  super_admin: "Super Admin (Plataforma)",
+  gestor: "Gestor da Organização",
+  membro: "Membro da Equipe",
 };
 
 interface TeamMember {
@@ -186,7 +186,7 @@ const Configuracoes = () => {
     }
   };
 
-  const isAdmin = role === "super_admin" || role === "org_admin";
+  const isAdmin = role === "super_admin" || role === "gestor";
   const currentPlanId = organization?.plan_type || "free";
 
   return (
@@ -295,8 +295,8 @@ const Configuracoes = () => {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="org_admin">Administrador</SelectItem>
-                                  <SelectItem value="org_member">Funcionário</SelectItem>
+                                  <SelectItem value="gestor">Gestor da Organização</SelectItem>
+                                  <SelectItem value="membro">Membro da Equipe</SelectItem>
                                 </SelectContent>
                               </Select>
                             ) : (

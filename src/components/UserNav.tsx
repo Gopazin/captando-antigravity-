@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Settings, LogOut, User, Crown } from "lucide-react";
+import { Settings, LogOut, User, Crown, ServerCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function UserNav() {
@@ -32,7 +32,11 @@ export function UserNav() {
     .substring(0, 2);
 
   const planType = organization?.plan_type || "Free";
-  const roleLabel = role === "super_admin" ? "Super Admin" : role === "org_admin" ? "Administrador" : "Membro";
+  const roleLabel = role === "super_admin" 
+    ? "Super Admin" 
+    : role === "gestor" 
+      ? "Gestor" 
+      : "Membro";
 
   return (
     <DropdownMenu>
@@ -79,6 +83,12 @@ export function UserNav() {
                <Crown className="mr-2 h-4 w-4" />
                <span>Fazer Upgrade</span>
              </DropdownMenuItem>
+          )}
+          {role === "super_admin" && (
+            <DropdownMenuItem onClick={() => navigate("/plataforma")} className="cursor-pointer text-warning font-semibold">
+              <ServerCog className="mr-2 h-4 w-4" />
+              <span>Painel da Plataforma</span>
+            </DropdownMenuItem>
           )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

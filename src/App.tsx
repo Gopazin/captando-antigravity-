@@ -16,7 +16,7 @@ import GestaoProjetosOverview from "./pages/GestaoProjetosOverview";
 import GestaoProjetoDetalhe from "./pages/GestaoProjetoDetalhe";
 import GestaoCompliance from "./pages/GestaoCompliance";
 import Configuracoes from "./pages/Configuracoes";
-import MasterAdmin from "./pages/MasterAdmin";
+import PlatformAdmin from "./pages/PlatformAdmin";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 
@@ -57,8 +57,9 @@ const App = () => (
               {/* Other */}
               <Route path="/gestao" element={<GestaoCompliance />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
-              {/* Super Admin */}
-              <Route path="/admin-master" element={<MasterAdmin />} />
+              {/* Super Admin / Platform Performance */}
+              <Route path="/plataforma" element={<PlatformAdmin />} />
+              <Route path="/admin-master" element={<Navigate to="/plataforma" replace />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -17,7 +17,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   organization: Organization | null;
-  role: "super_admin" | "org_admin" | "org_member" | null;
+  role: "super_admin" | "gestor" | "membro" | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
 }
