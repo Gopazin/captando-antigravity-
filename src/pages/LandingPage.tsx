@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthProvider";
 import { Logo } from "@/components/Logo";
 import {
   Radar,
@@ -175,6 +176,7 @@ const plans = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -201,16 +203,16 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <button
               className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden md:block"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate(session ? "/dashboard" : "/auth")}
             >
-              Login
+              {session ? "Dashboard" : "Login"}
             </button>
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg px-4"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate(session ? "/dashboard" : "/auth")}
             >
-              Começar Grátis
+              {session ? "Acessar Plataforma" : "Começar Grátis"}
             </Button>
             <button
               className="md:hidden text-gray-600"
@@ -227,7 +229,9 @@ export default function LandingPage() {
             <a href="#funcionalidades" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Funcionalidades</a>
             <a href="#ia" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Inteligência Artificial</a>
             <a href="#planos" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Planos</a>
-            <button className="block text-sm text-gray-600" onClick={() => navigate("/auth")}>Login</button>
+            <button className="block text-sm text-gray-600" onClick={() => navigate(session ? "/dashboard" : "/auth")}>
+              {session ? "Dashboard" : "Login"}
+            </button>
           </div>
         )}
       </nav>
@@ -285,9 +289,9 @@ export default function LandingPage() {
             <Button
               size="lg"
               className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 text-base rounded-xl shadow-lg shadow-emerald-900/40 transition-all"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate(session ? "/dashboard" : "/auth")}
             >
-              Começar Grátis <ArrowRight className="ml-2 h-4 w-4" />
+              {session ? "Acessar Dashboard" : "Começar Grátis"} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
               variant="outline"
@@ -440,9 +444,9 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl"
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate(session ? "/dashboard" : "/auth")}
                 >
-                  Experimentar a IA <ChevronRight className="ml-1 h-4 w-4" />
+                  {session ? "Acessar Dashboard" : "Experimentar a IA"} <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -603,9 +607,9 @@ export default function LandingPage() {
                           : "border-gray-200 text-gray-700 hover:bg-gray-50"
                       }`}
                       variant={plan.highlighted ? "default" : "outline"}
-                      onClick={() => navigate("/auth")}
+                      onClick={() => navigate(session ? "/dashboard" : "/auth")}
                     >
-                      {plan.cta}
+                      {session ? "Ver no Dashboard" : plan.cta}
                     </Button>
                   </CardContent>
                 </Card>
@@ -633,9 +637,9 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-10 text-base rounded-xl shadow-lg shadow-emerald-900/40"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate(session ? "/dashboard" : "/auth")}
               >
-                Criar Conta Grátis <ArrowRight className="ml-2 h-4 w-4" />
+                {session ? "Voltar ao Dashboard" : "Criar Conta Grátis"} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </motion.div>

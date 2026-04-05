@@ -82,7 +82,7 @@ export default function MasterAdmin() {
   const [feedbacksLoading, setFeedbacksLoading] = useState(false);
 
   useEffect(() => {
-    if (role !== "super_admin") navigate("/");
+    if (role !== "super_admin" && role !== null) navigate("/dashboard");
   }, [role, navigate]);
 
   useEffect(() => {

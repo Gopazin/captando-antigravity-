@@ -37,7 +37,7 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        navigate("/");
+        navigate("/dashboard");
       }
     } catch (error: unknown) {
       const e = error as Error;
