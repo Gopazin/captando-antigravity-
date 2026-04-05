@@ -1,20 +1,27 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { UserNav } from "@/components/UserNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Outlet } from "react-router-dom";
 
 export function AppLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-slate-50/10">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between border-b border-border px-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-            <SidebarTrigger className="mr-4" />
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground hidden sm:block">Plano Free</span>
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                U
-              </div>
+          <header className="h-16 flex items-center justify-between border-b border-border/40 px-6 bg-white/60 backdrop-blur-md sticky top-0 z-40 transition-all shadow-sm">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="h-9 w-9 hover:bg-accent/10 hover:text-accent transition-colors" />
+              <div className="h-5 w-[1px] bg-border/50 hidden sm:block" />
+              <h2 className="text-sm font-medium text-muted-foreground hidden md:block">
+                Painel Administrativo
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-2 md:gap-4">
+               <ThemeToggle />
+               <UserNav />
             </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">

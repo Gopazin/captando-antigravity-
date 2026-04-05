@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, Plus, Trash2, Upload, FileText, Loader2 } from "lucide-react";
+import { Save, Plus, Trash2, Upload, FileText, Loader2, AlertCircle } from "lucide-react";
 import { PreviousProject, TeamMember } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,36 +43,46 @@ const Cofre = () => {
 
   useEffect(() => {
     const fetchOrgData = async () => {
-      if (!organization?.id) return;
+      if (!organization?.id) {
+        console.warn("Cofre: No organization ID found in context");
+        // We wait a bit in case it's still loading from AuthProvider
+        const timer = setTimeout(() => setLoading(false), 2000);
+        return () => clearTimeout(timer);
+      }
       
       setLoading(true);
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("*")
-        .eq("id", organization.id)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching organization:", error);
-        toast({ 
-          title: "Erro ao carregar dados", 
-          description: "Não foi possível carregar as informações do cofre.",
-          variant: "destructive"
-        });
-      } else if (data) {
-        setOrg({
-          id: data.id,
-          name: data.name || "",
-          cnpj: data.cnpj || "",
-          location: data.location || "",
-          mission: data.mission || "",
-          vision: data.vision || "",
-          previousProjects: (data.previous_projects as any) || [],
-          teamMembers: (data.team_members as any) || [],
-          documents: [] // Documents logic can be added later with Storage
-        });
+      try {
+        const { data, error } = await supabase
+          .from("organizations")
+          .select("*")
+          .eq("id", organization.id)
+          .single();
+        
+        if (error) {
+          console.error("Cofre: Error fetching organization:", error);
+          toast({ 
+            title: "Erro ao carregar dados", 
+            description: "Não foi possível carregar as informações do cofre.",
+            variant: "destructive"
+          });
+        } else if (data) {
+          setOrg({
+            id: data.id,
+            name: data.name || "",
+            cnpj: data.cnpj || "",
+            location: data.location || "",
+            mission: data.mission || "",
+            vision: data.vision || "",
+            previousProjects: (data.previous_projects as any) || [],
+            teamMembers: (data.team_members as any) || [],
+            documents: [] 
+          });
+        }
+      } catch (err) {
+        console.error("Cofre: Unexpected error", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchOrgData();
@@ -109,7 +119,10 @@ const Cofre = () => {
   };
 
   const handleSave = async () => {
-    if (!organization?.id) return;
+    if (!organization?.id) {
+      toast({ title: "Erro", description: "Você precisa estar vinculado a uma organização.", variant: "destructive" });
+      return;
+    }
     
     setSaving(true);
     const { error } = await supabase
@@ -126,14 +139,14 @@ const Cofre = () => {
       .eq("id", organization.id);
 
     if (error) {
-      console.error("Error saving organization:", error);
+      console.error("Cofre: Error saving organization:", error);
       toast({ 
         title: "Erro ao salvar", 
         description: "Houve um problema ao atualizar os dados.",
         variant: "destructive"
       });
     } else {
-      toast({ title: "Dados salvos!", description: "As informações do cofre foram salvas com sucesso no banco de dados." });
+      toast({ title: "Dados salvos!", description: "As informações do cofre foram salvas com sucesso." });
     }
     setSaving(false);
   };
@@ -142,7 +155,22 @@ const Cofre = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground animate-pulse">Carregando informações do cofre...</p>
+        <p className="text-muted-foreground animate-pulse">Sincronizando Cofre de Identidade...</p>
+      </div>
+    );
+  }
+
+  if (!organization?.id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-6 text-center max-w-md mx-auto">
+        <div className="p-4 bg-amber-50 rounded-full">
+          <AlertCircle className="h-12 w-12 text-amber-500" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">Organização não encontrada</h2>
+          <p className="text-muted-foreground">O Cofre de Identidade exige que sua conta esteja vinculada a uma organização. Entre em contato com o suporte ou tente novamente.</p>
+        </div>
+        <Button onClick={() => window.location.reload()} variant="outline">Recarregar Página</Button>
       </div>
     );
   }
@@ -306,4 +334,3 @@ const Cofre = () => {
 };
 
 export default Cofre;
-

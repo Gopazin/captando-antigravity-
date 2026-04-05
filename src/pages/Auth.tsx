@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Sparkles, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Logo } from "@/components/Logo";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -57,11 +58,8 @@ export default function Auth() {
       <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-accent/10 blur-[100px] pointer-events-none" />
 
       <Card className="w-full max-w-md glass-card border-primary/20 shadow-2xl relative z-10">
-        <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto bg-accent/10 p-3 rounded-full w-fit mb-2">
-            <Sparkles className="h-8 w-8 text-accent" />
-          </div>
-          <CardTitle className="text-3xl font-bold tracking-tight">Captando</CardTitle>
+        <CardHeader className="space-y-4 text-center">
+          <Logo variant="stacked" className="mb-2" />
           <CardDescription className="text-sm">
             {isSignUp ? "Crie a conta da sua Organização" : "Acesse seu Centro de Comando"}
           </CardDescription>

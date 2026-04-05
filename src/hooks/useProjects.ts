@@ -19,6 +19,9 @@ export interface Project {
   justification: string;
   objectives: string;
   methodology: string;
+  domain: string | null;
+  project_type: string | null;
+  readiness_level: any; // Using any for Jsonb for now
   budget: number;
   start_date: string | null;
   end_date: string | null;

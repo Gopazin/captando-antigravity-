@@ -55,17 +55,118 @@ export type Database = {
           },
         ]
       }
+      evaluation_skills: {
+        Row: {
+          id: string
+          domain: string
+          layer: string
+          instruction: string
+          model_name: string
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          domain: string
+          layer: string
+          instruction: string
+          model_name?: string
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          domain?: string
+          layer?: string
+          instruction?: string
+          model_name?: string
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      feedbacks: {
+        Row: {
+          ai_hint: string | null
+          created_at: string | null
+          id: string
+          message: string
+          organization_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_hint?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          organization_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_hint?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          organization_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedbacks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       grants: {
+
         Row: {
           area: string
           created_at: string | null
           deadline: string | null
           description: string | null
           eligibility: string | null
+          evaluation_framework: Json | null
           id: string
           is_active: boolean | null
           is_selected: boolean | null
           max_value: number | null
+          ods_prioritarios: string[] | null
           organization: string
           raw_content: string | null
           source_file: string | null
@@ -80,10 +181,12 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           eligibility?: string | null
+          evaluation_framework?: Json | null
           id?: string
           is_active?: boolean | null
           is_selected?: boolean | null
           max_value?: number | null
+          ods_prioritarios?: string[] | null
           organization: string
           raw_content?: string | null
           source_file?: string | null
@@ -98,10 +201,12 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           eligibility?: string | null
+          evaluation_framework?: Json | null
           id?: string
           is_active?: boolean | null
           is_selected?: boolean | null
           max_value?: number | null
+          ods_prioritarios?: string[] | null
           organization?: string
           raw_content?: string | null
           source_file?: string | null
@@ -156,6 +261,47 @@ export type Database = {
           vision?: string | null
         }
         Relationships: []
+      }
+      project_evaluations: {
+        Row: {
+          created_at: string | null
+          domain_context: string | null
+          feedback: string | null
+          id: string
+          layer: string
+          project_id: string
+          score: number | null
+          suggestions: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain_context?: string | null
+          feedback?: string | null
+          id?: string
+          layer: string
+          project_id: string
+          score?: number | null
+          suggestions?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          domain_context?: string | null
+          feedback?: string | null
+          id?: string
+          layer?: string
+          project_id?: string
+          score?: number | null
+          suggestions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_evaluations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_notes: {
         Row: {
@@ -246,6 +392,7 @@ export type Database = {
           budget: number | null
           created_at: string | null
           description: string | null
+          domain: string | null
           end_date: string | null
           generated_title: string | null
           grant_id: string | null
@@ -255,6 +402,8 @@ export type Database = {
           objectives: string | null
           organization_id: string | null
           progress: number | null
+          project_type: string | null
+          readiness_level: Json | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"] | null
           title: string
@@ -266,6 +415,7 @@ export type Database = {
           budget?: number | null
           created_at?: string | null
           description?: string | null
+          domain?: string | null
           end_date?: string | null
           generated_title?: string | null
           grant_id?: string | null
@@ -275,6 +425,8 @@ export type Database = {
           objectives?: string | null
           organization_id?: string | null
           progress?: number | null
+          project_type?: string | null
+          readiness_level?: Json | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"] | null
           title: string
@@ -286,6 +438,7 @@ export type Database = {
           budget?: number | null
           created_at?: string | null
           description?: string | null
+          domain?: string | null
           end_date?: string | null
           generated_title?: string | null
           grant_id?: string | null
@@ -295,6 +448,8 @@ export type Database = {
           objectives?: string | null
           organization_id?: string | null
           progress?: number | null
+          project_type?: string | null
+          readiness_level?: Json | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"] | null
           title?: string
@@ -355,11 +510,7 @@ export type Database = {
     }
     Functions: {
       consume_credits: {
-        Args: {
-          org_id: string
-          amount: number
-          descrip: string
-        }
+        Args: { amount: number; descrip: string; org_id: string }
         Returns: Json
       }
     }

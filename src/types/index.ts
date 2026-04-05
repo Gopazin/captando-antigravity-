@@ -39,7 +39,7 @@ export interface Grant {
   id: string;
   title: string;
   organization: string;
-  area: 'cultura' | 'esporte' | 'social' | 'educacao' | 'saude' | 'meio_ambiente' | 'tecnologia';
+  area: 'cultura' | 'esporte' | 'social' | 'educacao' | 'saude' | 'meio_ambiente' | 'tecnologia' | 'infraestrutura';
   maxValue: number;
   deadline: string;
   eligibility: string;
@@ -60,6 +60,8 @@ export interface Project {
   justification: string;
   objectives: string;
   methodology: string;
+  projectType: 'edital' | 'emenda';
+  domain: GrantArea;
   currentStep: number;
   createdAt: string;
   updatedAt: string;
@@ -76,6 +78,7 @@ export const AREA_LABELS: Record<GrantArea, string> = {
   saude: 'Saúde',
   meio_ambiente: 'Meio Ambiente',
   tecnologia: 'Tecnologia',
+  infraestrutura: 'Infraestrutura',
 };
 
 export const STATUS_LABELS: Record<ProjectStatus, string> = {

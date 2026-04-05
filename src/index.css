@@ -24,7 +24,7 @@
     --muted: 240 5% 96%;
     --muted-foreground: 240 5% 45%;
 
-    /* Emerald */
+    /* Emerald Official */
     --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
 
@@ -41,10 +41,10 @@
     --sidebar-foreground: 240 15% 90%;
     --sidebar-primary: 246 83% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 246 83% 25%;
-    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-accent: 160 84% 20%;
+    --sidebar-accent-foreground: 160 84% 95%;
     --sidebar-border: 246 83% 20%;
-    --sidebar-ring: 246 83% 58%;
+    --sidebar-ring: 160 84% 39%;
 
     --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
@@ -91,10 +91,10 @@
     --sidebar-foreground: 240 10% 90%;
     --sidebar-primary: 246 83% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 246 30% 15%;
-    --sidebar-accent-foreground: 240 10% 95%;
+    --sidebar-accent: 160 84% 15%;
+    --sidebar-accent-foreground: 160 84% 90%;
     --sidebar-border: 246 30% 15%;
-    --sidebar-ring: 246 83% 65%;
+    --sidebar-ring: 160 84% 39%;
   }
 }
 

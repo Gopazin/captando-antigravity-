@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Logo } from "@/components/Logo";
 import {
   Radar,
   ShieldCheck,
@@ -16,11 +17,13 @@ import {
   Zap,
   Lock,
   Target,
-  Users,
   TrendingUp,
   ChevronRight,
   Star,
+  Menu,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -66,13 +69,15 @@ const features = [
     description:
       "Monitoramento automático de editais do PNCP, portais estaduais e plataformas como Prosas e FBB. Filtros por região, valor e área de atuação.",
     badge: "Automático",
+    badgeColor: "bg-emerald-100 text-emerald-700",
   },
   {
     icon: BrainCircuit,
     title: "Escritório de Projetos com IA",
     description:
       "A IA cruza dados da sua organização com o edital selecionado e gera projetos completos: justificativa, metodologia, objetivos e orçamento.",
-    badge: "IA Generativa",
+    badge: "IA Avançada",
+    badgeColor: "bg-violet-100 text-violet-700",
   },
   {
     icon: Lock,
@@ -80,6 +85,7 @@ const features = [
     description:
       "Armazene CNPJ, estatutos, portfólio e histórico da organização. Esses dados alimentam a IA para gerar projetos personalizados e aderentes.",
     badge: "Seguro",
+    badgeColor: "bg-blue-100 text-blue-700",
   },
   {
     icon: ShieldCheck,
@@ -87,6 +93,7 @@ const features = [
     description:
       "Kanban de execução, gestor de rubricas (Custeio vs Capital), alertas de prazos e módulo completo de prestação de contas.",
     badge: "End-to-End",
+    badgeColor: "bg-orange-100 text-orange-700",
   },
   {
     icon: BarChart3,
@@ -94,6 +101,7 @@ const features = [
     description:
       "Visão consolidada de recursos captados, projetos em andamento, taxas de aprovação e alertas prioritários em tempo real.",
     badge: "Analytics",
+    badgeColor: "bg-sky-100 text-sky-700",
   },
   {
     icon: Target,
@@ -101,6 +109,7 @@ const features = [
     description:
       "Kanban profissional com 8 fases, tarefas priorizadas, notas de atividade e assistência de IA para sugerir próximos passos estratégicos.",
     badge: "Produtividade",
+    badgeColor: "bg-pink-100 text-pink-700",
   },
 ];
 
@@ -166,48 +175,81 @@ const plans = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-white text-gray-900 font-sans">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            <img src="/logo-icon.png" alt="Captando" className="h-9 w-9 rounded-lg object-contain" />
-            <span className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Captando
-            </span>
+            <Logo variant="horizontal" theme="light" />
           </div>
+
           <div className="hidden items-center gap-8 md:flex">
-            <a href="#funcionalidades" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#funcionalidades" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
               Funcionalidades
             </a>
-            <a href="#ia" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#ia" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
               Inteligência Artificial
             </a>
-            <a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#planos" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
               Planos
             </a>
           </div>
+
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+            <button
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden md:block"
+              onClick={() => navigate("/")}
+            >
               Login
-            </Button>
-            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => navigate("/")}>
+            </button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg px-4"
+              onClick={() => navigate("/")}
+            >
               Começar Grátis
             </Button>
+            <button
+              className="md:hidden text-gray-600"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white px-6 py-4 space-y-4">
+            <a href="#funcionalidades" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Funcionalidades</a>
+            <a href="#ia" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Inteligência Artificial</a>
+            <a href="#planos" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Planos</a>
+            <button className="block text-sm text-gray-600" onClick={() => navigate("/")}>Login</button>
+          </div>
+        )}
       </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden py-24 md:py-36">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+      {/* Hero — Dark Emerald (V1 style) */}
+      <section className="relative overflow-hidden bg-[#0D2B1F] py-24 md:py-36">
+        {/* Subtle grid pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+          }}
+        />
+        {/* Radial glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(16,185,129,0.15)_0%,_transparent_70%)]" />
+
         <div className="relative mx-auto max-w-7xl px-6 text-center">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-            <Badge className="mb-6 bg-accent/10 text-accent border-accent/20 hover:bg-accent/15">
-              <Zap className="mr-1 h-3 w-3" /> Plataforma com IA integrada
-            </Badge>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400 mb-8">
+              <Zap className="h-3 w-3" /> Plataforma com IA integrada
+            </span>
           </motion.div>
 
           <motion.h1
@@ -215,11 +257,11 @@ export default function LandingPage() {
             animate="visible"
             variants={fadeUp}
             custom={1}
-            className="mx-auto max-w-4xl text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl"
+            className="mx-auto max-w-4xl text-4xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            Capte, elabore e gerencie seus projetos{" "}
-            <span className="text-accent">com IA</span>
+            Capte Recursos e Gerencie{" "}
+            <span className="text-emerald-400">Projetos com a Potência da IA</span>
           </motion.h1>
 
           <motion.p
@@ -227,10 +269,10 @@ export default function LandingPage() {
             animate="visible"
             variants={fadeUp}
             custom={2}
-            className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
+            className="mx-auto mt-6 max-w-2xl text-lg text-white/60 md:text-xl leading-relaxed"
           >
-            Encontre editais automaticamente, elabore projetos com IA e gerencie todo o ciclo de captação — 
-            da oportunidade à prestação de contas — em uma única plataforma inteligente.
+            Acelere a busca por editais, automatize a escrita de projetos e eleve sua gestão. 
+            Tudo em uma plataforma inteligente.
           </motion.p>
 
           <motion.div
@@ -242,12 +284,17 @@ export default function LandingPage() {
           >
             <Button
               size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 px-8 text-base"
+              className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 text-base rounded-xl shadow-lg shadow-emerald-900/40 transition-all"
               onClick={() => navigate("/")}
             >
               Começar Grátis <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button variant="outline" size="lg" className="px-8 text-base" asChild>
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-white/20 bg-white/5 hover:bg-white/10 text-white px-8 text-base rounded-xl"
+              asChild
+            >
               <a href="#funcionalidades">Ver Funcionalidades</a>
             </Button>
           </motion.div>
@@ -258,14 +305,17 @@ export default function LandingPage() {
             animate="visible"
             variants={fadeUp}
             custom={4}
-            className="mx-auto mt-20 grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4"
+            className="mx-auto mt-20 grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4 border-t border-white/10 pt-12"
           >
             {stats.map((stat) => (
-              <div key={stat.label}>
-                <p className="text-3xl font-bold text-accent" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <div key={stat.label} className="text-center">
+                <p
+                  className="text-3xl font-bold text-emerald-400"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
                   {stat.value}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground leading-snug">{stat.label}</p>
+                <p className="mt-1 text-xs text-white/50 leading-snug">{stat.label}</p>
               </div>
             ))}
           </motion.div>
@@ -273,21 +323,22 @@ export default function LandingPage() {
       </section>
 
       {/* Pain Points */}
-      <section className="border-y border-border bg-card py-20 md:py-28">
+      <section className="bg-gray-50 py-20 md:py-28 border-b border-gray-100">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center">
             <h2
-              className="text-3xl font-bold tracking-tight md:text-4xl"
+              className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
-              Se você trabalha com captação de recursos, já sentiu essas dores
+              Seus Maiores Desafios na Captação, Resolvidos.
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              A captação de recursos é um processo complexo, burocrático e cheio de armadilhas. Nós entendemos cada uma delas.
+            <p className="mx-auto mt-4 max-w-2xl text-gray-500">
+              A captação de recursos é um processo complexo, burocrático e cheio de armadilhas. 
+              Nós entendemos cada uma delas.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
+          <div className="mt-16 grid gap-6 md:grid-cols-3">
             {painPoints.map((point, i) => (
               <motion.div
                 key={point.title}
@@ -297,13 +348,13 @@ export default function LandingPage() {
                 variants={fadeUp}
                 custom={i}
               >
-                <Card className="h-full border-destructive/10 bg-destructive/[0.02]">
+                <Card className="h-full border-red-100 bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardContent className="p-8">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
-                      <point.icon className="h-6 w-6 text-destructive" />
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 border border-red-100">
+                      <point.icon className="h-6 w-6 text-red-500" />
                     </div>
-                    <h3 className="text-lg font-semibold leading-snug">{point.title}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{point.description}</p>
+                    <h3 className="text-base font-semibold leading-snug text-gray-900">{point.title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-500">{point.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -313,22 +364,25 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="funcionalidades" className="py-20 md:py-28">
+      <section id="funcionalidades" className="py-20 md:py-28 bg-white">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center">
-            <Badge className="mb-4 bg-accent/10 text-accent border-accent/20">Módulos da Plataforma</Badge>
+            <span className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-medium text-emerald-700 mb-4">
+              Módulos da Plataforma
+            </span>
             <h2
-              className="text-3xl font-bold tracking-tight md:text-4xl"
+              className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
-              Tudo que você precisa em um só lugar
+              Tudo que Você Precisa em um Só Lugar.
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Do monitoramento de editais à prestação de contas, cada módulo foi desenhado para eliminar gargalos e maximizar suas chances de aprovação.
+            <p className="mx-auto mt-4 max-w-2xl text-gray-500">
+              Do monitoramento de editais à prestação de contas, cada módulo foi desenhado para 
+              eliminar gargalos e maximizar suas chances de aprovação.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, i) => (
               <motion.div
                 key={feature.title}
@@ -338,18 +392,18 @@ export default function LandingPage() {
                 variants={fadeUp}
                 custom={i}
               >
-                <Card className="group h-full transition-all hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5">
-                  <CardContent className="p-8">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 transition-colors group-hover:bg-accent/20">
-                        <feature.icon className="h-5 w-5 text-accent" />
+                <Card className="group h-full border-gray-100 bg-white shadow-sm hover:shadow-lg hover:border-emerald-100 transition-all duration-300">
+                  <CardContent className="p-7">
+                    <div className="mb-5 flex items-start justify-between">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 group-hover:bg-emerald-100 transition-colors">
+                        <feature.icon className="h-5 w-5 text-emerald-600" />
                       </div>
-                      <Badge variant="secondary" className="text-[10px]">
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${feature.badgeColor}`}>
                         {feature.badge}
-                      </Badge>
+                      </span>
                     </div>
-                    <h3 className="text-lg font-semibold">{feature.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
+                    <h3 className="text-base font-semibold text-gray-900">{feature.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-500">{feature.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -359,18 +413,25 @@ export default function LandingPage() {
       </section>
 
       {/* AI Section */}
-      <section id="ia" className="border-y border-border bg-primary py-20 text-primary-foreground md:py-28">
-        <div className="mx-auto max-w-7xl px-6">
+      <section id="ia" className="py-20 md:py-28 bg-[#1a1040] relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(139,92,246,0.2)_0%,_transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(16,185,129,0.1)_0%,_transparent_60%)]" />
+
+        <div className="relative mx-auto max-w-7xl px-6">
           <div className="grid items-center gap-16 lg:grid-cols-2">
             <div>
-              <Badge className="mb-4 bg-accent/20 text-accent border-accent/30">Inteligência Artificial</Badge>
+              <span className="inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400 mb-5">
+                Inteligência Artificial
+              </span>
               <h2
-                className="text-3xl font-bold tracking-tight md:text-4xl"
+                className="text-3xl font-bold tracking-tight text-white md:text-4xl"
                 style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               >
-                Sua equipe de captação, potencializada por IA
+                Sua equipe de captação,{" "}
+                <span className="text-emerald-400">potencializada por IA</span>
               </h2>
-              <p className="mt-4 text-primary-foreground/70 leading-relaxed">
+              <p className="mt-5 text-white/60 leading-relaxed text-base">
                 A inteligência artificial do Captando não substitui o profissional — ela o torna imbatível. 
                 Desde a leitura automática de editais até a geração de projetos completos, 
                 cada funcionalidade foi treinada com as melhores práticas de captação de recursos no Brasil.
@@ -378,7 +439,7 @@ export default function LandingPage() {
               <div className="mt-8">
                 <Button
                   size="lg"
-                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl"
                   onClick={() => navigate("/")}
                 >
                   Experimentar a IA <ChevronRight className="ml-1 h-4 w-4" />
@@ -386,7 +447,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {aiCapabilities.map((cap, i) => (
                 <motion.div
                   key={cap.title}
@@ -395,11 +456,13 @@ export default function LandingPage() {
                   viewport={{ once: true, margin: "-50px" }}
                   variants={fadeUp}
                   custom={i}
-                  className="rounded-2xl border border-primary-foreground/10 bg-primary-foreground/5 p-6 backdrop-blur-sm"
+                  className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm hover:border-emerald-500/30 hover:bg-white/8 transition-all"
                 >
-                  <cap.icon className="mb-3 h-6 w-6 text-accent" />
-                  <h3 className="text-sm font-semibold">{cap.title}</h3>
-                  <p className="mt-2 text-xs leading-relaxed text-primary-foreground/60">{cap.description}</p>
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15">
+                    <cap.icon className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-white">{cap.title}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-white/50">{cap.description}</p>
                 </motion.div>
               ))}
             </div>
@@ -408,37 +471,37 @@ export default function LandingPage() {
       </section>
 
       {/* Social Proof */}
-      <section className="py-20 md:py-28">
+      <section className="py-20 md:py-28 bg-gray-50 border-y border-gray-100">
         <div className="mx-auto max-w-7xl px-6 text-center">
           <h2
-            className="text-3xl font-bold tracking-tight md:text-4xl"
+            className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             Feito para quem leva captação a sério
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-xl text-gray-500">
             Prefeituras, ONGs, associações, fundações e empresas já estão transformando a forma como captam e gerenciam seus projetos.
           </p>
 
-          <div className="mx-auto mt-16 grid max-w-4xl gap-8 md:grid-cols-3">
+          <div className="mx-auto mt-16 grid max-w-4xl gap-6 md:grid-cols-3">
             {[
               {
-                quote:
-                  "Antes levávamos 3 semanas para montar um projeto. Com o Captando, reduzimos para 3 dias.",
+                quote: "Antes levávamos 3 semanas para montar um projeto. Com o Captando, reduzimos para 3 dias.",
                 author: "Diretora de Projetos",
                 org: "ONG Educação Viva",
+                initials: "EV",
               },
               {
-                quote:
-                  "O radar de editais nos trouxe oportunidades que nunca teríamos encontrado sozinhos.",
+                quote: "O radar de editais nos trouxe oportunidades que nunca teríamos encontrado sozinhos.",
                 author: "Secretário de Cultura",
                 org: "Prefeitura Municipal",
+                initials: "PM",
               },
               {
-                quote:
-                  "A gestão de compliance nos deu a segurança que precisávamos para escalar nossas captações.",
+                quote: "A gestão de compliance nos deu a segurança que precisávamos para escalar nossas captações.",
                 author: "Coordenador Financeiro",
                 org: "Instituto Social Brasil",
+                initials: "IS",
               },
             ].map((testimonial, i) => (
               <motion.div
@@ -449,17 +512,22 @@ export default function LandingPage() {
                 variants={fadeUp}
                 custom={i}
               >
-                <Card className="h-full">
+                <Card className="h-full border-gray-100 bg-white shadow-sm text-left">
                   <CardContent className="p-6">
-                    <div className="mb-4 flex gap-1">
+                    <div className="mb-4 flex gap-0.5">
                       {[...Array(5)].map((_, j) => (
-                        <Star key={j} className="h-4 w-4 fill-accent text-accent" />
+                        <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <p className="text-sm leading-relaxed text-muted-foreground italic">"{testimonial.quote}"</p>
-                    <div className="mt-4 border-t border-border pt-4">
-                      <p className="text-sm font-semibold">{testimonial.author}</p>
-                      <p className="text-xs text-muted-foreground">{testimonial.org}</p>
+                    <p className="text-sm leading-relaxed text-gray-600 italic">"{testimonial.quote}"</p>
+                    <div className="mt-5 flex items-center gap-3 border-t border-gray-100 pt-4">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                        {testimonial.initials}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{testimonial.author}</p>
+                        <p className="text-xs text-gray-400">{testimonial.org}</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -470,21 +538,21 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="planos" className="border-y border-border bg-card py-20 md:py-28">
+      <section id="planos" className="py-20 md:py-28 bg-white">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center">
             <h2
-              className="text-3xl font-bold tracking-tight md:text-4xl"
+              className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               Planos que cabem na sua realidade
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-xl text-gray-500">
               Comece gratuitamente e evolua conforme a sua necessidade de captação cresce.
             </p>
           </div>
 
-          <div className="mx-auto mt-16 grid max-w-3xl gap-8 md:grid-cols-2">
+          <div className="mx-auto mt-16 grid max-w-3xl gap-6 md:grid-cols-2">
             {plans.map((plan, i) => (
               <motion.div
                 key={plan.name}
@@ -497,40 +565,42 @@ export default function LandingPage() {
                 <Card
                   className={`relative h-full ${
                     plan.highlighted
-                      ? "border-accent shadow-xl shadow-accent/10"
-                      : ""
+                      ? "border-emerald-400 shadow-xl shadow-emerald-100 ring-1 ring-emerald-400"
+                      : "border-gray-100 shadow-sm"
                   }`}
                 >
                   {plan.highlighted && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-accent text-accent-foreground">Mais Popular</Badge>
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                      <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow">
+                        Mais Popular
+                      </span>
                     </div>
                   )}
                   <CardContent className="p-8">
-                    <h3 className="text-lg font-bold">{plan.name}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
+                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{plan.description}</p>
                     <div className="mt-6 flex items-baseline gap-1">
                       <span
-                        className="text-4xl font-bold"
+                        className="text-4xl font-bold text-gray-900"
                         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                       >
                         {plan.price}
                       </span>
-                      <span className="text-muted-foreground">{plan.period}</span>
+                      <span className="text-gray-400">{plan.period}</span>
                     </div>
                     <ul className="mt-8 space-y-3">
                       {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-3 text-sm">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                        <li key={f} className="flex items-start gap-3 text-sm text-gray-700">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                           {f}
                         </li>
                       ))}
                     </ul>
                     <Button
-                      className={`mt-8 w-full ${
+                      className={`mt-8 w-full rounded-xl font-semibold ${
                         plan.highlighted
-                          ? "bg-accent text-accent-foreground hover:bg-accent/90"
-                          : ""
+                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          : "border-gray-200 text-gray-700 hover:bg-gray-50"
                       }`}
                       variant={plan.highlighted ? "default" : "outline"}
                       onClick={() => navigate("/")}
@@ -546,22 +616,23 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 md:py-28">
+      <section className="py-20 md:py-28 bg-[#0D2B1F]">
         <div className="mx-auto max-w-7xl px-6 text-center">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
             <h2
-              className="mx-auto max-w-3xl text-3xl font-bold tracking-tight md:text-5xl"
+              className="mx-auto max-w-3xl text-3xl font-bold tracking-tight text-white md:text-5xl"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
-              Pare de perder editais. Comece a captar com inteligência.
+              Pare de perder editais.{" "}
+              <span className="text-emerald-400">Comece a captar com inteligência.</span>
             </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+            <p className="mx-auto mt-6 max-w-xl text-lg text-white/50">
               Junte-se às organizações que estão profissionalizando a captação e gestão de projetos com inteligência artificial.
             </p>
             <div className="mt-10">
               <Button
                 size="lg"
-                className="bg-accent text-accent-foreground hover:bg-accent/90 px-10 text-base"
+                className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-10 text-base rounded-xl shadow-lg shadow-emerald-900/40"
                 onClick={() => navigate("/")}
               >
                 Criar Conta Grátis <ArrowRight className="ml-2 h-4 w-4" />
@@ -572,42 +643,43 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-primary py-12 text-primary-foreground">
+      <footer className="border-t border-[#1a3a28] bg-[#0a1f14] py-14 text-white">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-8 md:grid-cols-4">
+          <div className="grid gap-10 md:grid-cols-4">
             <div className="md:col-span-2">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground font-bold text-sm">
-                  C
-                </div>
-                <span className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                  Captando
+              <Logo variant="horizontal" theme="dark" className="mb-4" />
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/40">
+                A infraestrutura definitiva para o ciclo completo do recurso público. 
+                IA de ponta, monitoramento ativo de editais e compliance rigoroso — 
+                para prefeituras, associações e empresas.
+              </p>
+              <div className="mt-6 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-xs text-white/40">
+                  🔒 SSL 256-bit
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-xs text-white/40">
+                  🇧🇷 Dados no Brasil
                 </span>
               </div>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-primary-foreground/60">
-                Captando é a infraestrutura definitiva para o ciclo completo do recurso público. 
-                Unimos inteligência artificial de ponta, monitoramento ativo de editais e uma gestão de compliance rigorosa 
-                para transformar a captação de recursos em um processo seguro, profissional e escalável para prefeituras, associações e empresas.
-              </p>
             </div>
             <div>
-              <h4 className="text-sm font-semibold">Plataforma</h4>
-              <ul className="mt-4 space-y-2 text-sm text-primary-foreground/60">
-                <li><a href="#funcionalidades" className="hover:text-accent transition-colors">Funcionalidades</a></li>
-                <li><a href="#ia" className="hover:text-accent transition-colors">Inteligência Artificial</a></li>
-                <li><a href="#planos" className="hover:text-accent transition-colors">Planos e Preços</a></li>
+              <h4 className="text-sm font-semibold text-white/80">Plataforma</h4>
+              <ul className="mt-4 space-y-2.5 text-sm text-white/40">
+                <li><a href="#funcionalidades" className="hover:text-emerald-400 transition-colors">Funcionalidades</a></li>
+                <li><a href="#ia" className="hover:text-emerald-400 transition-colors">Inteligência Artificial</a></li>
+                <li><a href="#planos" className="hover:text-emerald-400 transition-colors">Planos e Preços</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold">Legal</h4>
-              <ul className="mt-4 space-y-2 text-sm text-primary-foreground/60">
-                <li><a href="#" className="hover:text-accent transition-colors">Termos de Uso</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Política de Privacidade</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">LGPD</a></li>
+              <h4 className="text-sm font-semibold text-white/80">Legal</h4>
+              <ul className="mt-4 space-y-2.5 text-sm text-white/40">
+                <li><a href="#" className="hover:text-emerald-400 transition-colors">Termos de Uso</a></li>
+                <li><a href="#" className="hover:text-emerald-400 transition-colors">Política de Privacidade</a></li>
+                <li><a href="#" className="hover:text-emerald-400 transition-colors">LGPD</a></li>
               </ul>
             </div>
           </div>
-          <div className="mt-12 border-t border-primary-foreground/10 pt-6 text-center text-xs text-primary-foreground/40">
+          <div className="mt-12 border-t border-white/5 pt-6 text-center text-xs text-white/20">
             © {new Date().getFullYear()} Captando. Todos os direitos reservados.
           </div>
         </div>

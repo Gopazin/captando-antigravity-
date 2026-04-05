@@ -11,8 +11,6 @@ interface Organization {
   location?: string | null;
   mission?: string | null;
   vision?: string | null;
-  interested_areas?: string[] | null;
-  interested_sources?: string[] | null;
 }
 
 interface AuthContextType {
@@ -64,6 +62,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const fetchUserOrgAndRole = async (userId: string) => {
+    console.log("Auth: Fetching role/org for user", userId);
+
+    // Guard: reject obviously invalid/dev user IDs immediately
+    if (!userId.match(/^[0-9a-f-]{36}$/i)) {
+      console.warn("Auth: Non-UUID userId detected — signing out.");
+      await supabase.auth.signOut();
+      setRole(null);
+      setOrganization(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("user_roles")
@@ -78,24 +88,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             cnpj,
             location,
             mission,
-            vision,
-            interested_areas,
-            interested_sources
+            vision
           )
         `)
         .eq("user_id", userId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Auth: Error fetching role/org", error);
+        throw error;
+      }
 
       if (data) {
+        console.log("Auth: Role found:", data.role);
         setRole(data.role as AuthContextType["role"]);
         if (data.organizations) {
+          console.log("Auth: Org found:", data.organizations.name);
           setOrganization(data.organizations as unknown as Organization);
+        } else {
+          console.warn("Auth: User has role but no organization attached");
+          setOrganization(null);
         }
+      } else {
+        console.warn("Auth: No entry found for user in user_roles table");
+        setRole(null);
+        setOrganization(null);
       }
-    } catch (e) {
-      console.error("Failed to fetch user role/org", e);
+    } catch (e: unknown) {
+      console.error("Auth: Failed to fetch user role/org", e);
+      // If the JWT is malformed/expired, or the user ID is invalid (e.g. 'fake' from dev),
+      // clear the session automatically to prevent infinite blank-page state.
+      const errMsg = (e as { message?: string })?.message ?? "";
+      const errCode = (e as { code?: string })?.code ?? "";
+      const isFatalAuthError =
+        errMsg.includes("JWT") ||
+        errMsg.includes("PGRST301") ||
+        errCode === "PGRST301" ||
+        errMsg.includes("401") ||
+        errMsg.includes("400");
+      if (isFatalAuthError || !userId.match(/^[0-9a-f-]{36}$/i)) {
+        console.warn("Auth: Invalid session detected — signing out automatically.");
+        await supabase.auth.signOut();
+      }
+      setRole(null);
+      setOrganization(null);
     } finally {
       setIsLoading(false);
     }

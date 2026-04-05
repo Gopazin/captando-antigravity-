@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User, Upload, FileText, X, Coins } from "lucide-react";
+import { Sparkles, ChevronRight, ChevronLeft, Check, Loader2, Send, Bot, User, Upload, FileText, X, Coins, LayoutGrid, Landmark } from "lucide-react";
 import { AREA_LABELS, GrantArea } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
 import { useProjects } from "@/hooks/useProjects";
 import { useNavigate } from "react-router-dom";
+import { ProjectEvaluationResults } from "@/components/projects/ProjectEvaluationResults";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const steps = [
   { id: 1, title: "Seleção", description: "Escolha o perfil e edital" },
@@ -55,6 +57,14 @@ const Assistente = () => {
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
+
+  // Multi-domain state
+  const [projectType, setProjectType] = useState<'edital' | 'emenda'>('edital');
+  const [selectedDomain, setSelectedDomain] = useState<GrantArea>('tecnologia');
+  const [evaluationResults, setEvaluationResults] = useState<any[]>([]);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [showEvaluation, setShowEvaluation] = useState(false);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
   // PDF upload state
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -120,7 +130,6 @@ const Assistente = () => {
 
     setPdfFile(file);
 
-    // Convert to base64 for sending to edge function
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = (reader.result as string).split(",")[1];
@@ -138,7 +147,6 @@ const Assistente = () => {
   const handleGenerate = async () => {
     if (!organization?.id) return;
 
-    // Check and consume credits (1 credit per generation)
     const { data: creditOp, error: creditError } = await supabase.rpc("consume_credits", {
       org_id: organization.id,
       amount: 1,
@@ -156,8 +164,7 @@ const Assistente = () => {
     setGenerationPhase(0);
 
     const grant = grants.find((g) => g.id === selectedGrant);
-    if (!grant) return;
-
+    
     const phaseTimer1 = setTimeout(() => setGenerationPhase(1), 1000);
     const phaseTimer2 = setTimeout(() => setGenerationPhase(2), 2000);
     const phaseTimer3 = setTimeout(() => setGenerationPhase(3), 3500);
@@ -167,6 +174,8 @@ const Assistente = () => {
         organization: fullOrgData || organization,
         grant,
         briefing,
+        domain: selectedDomain,
+        projectType: projectType
       };
 
       if (pdfBase64) {
@@ -182,16 +191,8 @@ const Assistente = () => {
       clearTimeout(phaseTimer2);
       clearTimeout(phaseTimer3);
 
-      if (error) {
-        console.error("Generation error:", error);
-        toast.error("Erro ao gerar projeto. Tente novamente.");
-        setIsGenerating(false);
-        setCurrentStep(2);
-        return;
-      }
-
-      if (data.error) {
-        toast.error(data.error);
+      if (error || data.error) {
+        toast.error(data?.error || "Erro ao gerar projeto.");
         setIsGenerating(false);
         setCurrentStep(2);
         return;
@@ -264,13 +265,15 @@ const Assistente = () => {
       const newProject = await createProject({
         title: generatedContent.title,
         description: briefing,
-        grant_id: selectedGrant,
+        grant_id: selectedGrant || null,
         status: "elaboracao",
         briefing: briefing,
         generated_title: generatedContent.title,
         justification: generatedContent.justification,
         objectives: generatedContent.objectives,
         methodology: generatedContent.methodology,
+        domain: selectedDomain,
+        project_type: projectType,
       });
 
       if (newProject) {
@@ -285,6 +288,66 @@ const Assistente = () => {
     }
   };
 
+  const handlePreEvaluate = async () => {
+    if (isEvaluating) return;
+    setIsEvaluating(true);
+    setShowEvaluation(true);
+    setEvaluationResults([]);
+
+    let projectId = activeProjectId;
+    if (!projectId) {
+      try {
+        const tempProject = await createProject({
+          title: generatedContent.title || "Projeto em Avaliação",
+          status: "elaboracao",
+          briefing: briefing,
+          justification: generatedContent.justification,
+          objectives: generatedContent.objectives,
+          methodology: generatedContent.methodology,
+          domain: selectedDomain,
+          project_type: projectType,
+        });
+        if (tempProject) {
+          projectId = tempProject.id;
+          setActiveProjectId(projectId);
+        }
+      } catch (err) {
+        console.error("Error creating temp project:", err);
+        toast.error("Erro ao preparar projeto para avaliação.");
+        setIsEvaluating(false);
+        return;
+      }
+    }
+
+    if (!projectId) return;
+
+    try {
+      const targetLayers: Array<"conformidade" | "merito" | "alinhamento"> = ["conformidade", "merito", "alinhamento"];
+      const results: any[] = [];
+
+      for (const layer of targetLayers) {
+        const { data, error } = await supabase.functions.invoke("evaluate-project", {
+          body: { projectId, layer },
+        });
+
+        if (error) {
+          console.error(`Error in ${layer} evaluation:`, error);
+          continue;
+        }
+
+        results.push({ layer, ...data });
+        setEvaluationResults([...results]);
+      }
+      
+      toast.success("Avaliação completa!");
+    } catch (err) {
+      console.error("Evaluation error:", err);
+      toast.error("Erro ao realizar pré-avaliação.");
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -292,7 +355,6 @@ const Assistente = () => {
         <p className="text-muted-foreground mt-1">Crie projetos estruturados com auxílio da IA</p>
       </div>
 
-      {/* Stepper */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
         {steps.map((step, i) => (
           <div key={step.id} className="flex items-center">
@@ -318,49 +380,77 @@ const Assistente = () => {
         <Card className="glass-card shadow-lg border-primary/10">
           <CardHeader>
             <CardTitle>Seleção de Perfil e Edital</CardTitle>
-            <CardDescription>Escolha o perfil da organização e o edital alvo.</CardDescription>
+            <CardDescription>Escolha o tipo de captação e o domínio alvo.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Perfil do Cofre</Label>
-                {organization && (
-                  <Badge variant="outline" className="text-[10px] bg-accent/5 text-accent border-accent/20">
-                    <Coins className="h-3 w-3 mr-1" /> {fullOrgData?.credits_balance ?? organization.credits_balance ?? 0} créditos
-                  </Badge>
-                )}
-              </div>
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-medium">{fullOrgData?.name || organization?.name || "Carregando..."}</p>
-                <p className="text-sm text-muted-foreground">
-                  {fullOrgData?.cnpj || "—"} · {fullOrgData?.location || "—"}
-                </p>
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <Label>Tipo de Captação</Label>
+              <Tabs value={projectType} onValueChange={(v) => setProjectType(v as 'edital' | 'emenda')} className="w-full">
+                <TabsList className="grid grid-cols-2 w-full h-12 p-1 bg-muted/50">
+                  <TabsTrigger value="edital" className="flex items-center gap-2 py-2 h-full rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <LayoutGrid className="h-4 w-4" />
+                    Edital Público / Privado
+                  </TabsTrigger>
+                  <TabsTrigger value="emenda" className="flex items-center gap-2 py-2 h-full rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <Landmark className="h-4 w-4" />
+                    Emenda Parlamentar
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Domínio do Projeto</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {Object.entries(AREA_LABELS).map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => setSelectedDomain(value as GrantArea)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all text-center gap-1 ${
+                      selectedDomain === value 
+                        ? "bg-primary/5 border-primary text-primary shadow-sm" 
+                        : "bg-background border-muted hover:border-primary/30 text-muted-foreground"
+                    }`}
+                  >
+                    <span className="text-xs font-medium">{label}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-4 pt-2">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Edital Alvo</Label>
-                  <Button variant="outline" size="sm" onClick={handleRecommendGrants} disabled={isRecommending}>
-                    {isRecommending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1 text-accent" />}
-                    Sugerir com IA
-                  </Button>
+                  <Label>{projectType === 'edital' ? 'Edital Alvo' : 'Contexto da Emenda (Opcional)'}</Label>
+                  {projectType === 'edital' && (
+                    <Button variant="outline" size="sm" onClick={handleRecommendGrants} disabled={isRecommending}>
+                      {isRecommending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1 text-accent" />}
+                      Sugerir com IA
+                    </Button>
+                  )}
                 </div>
-                <Select value={selectedGrant} onValueChange={setSelectedGrant}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um edital" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {grants.map((g) => (
-                      <SelectItem key={g.id} value={g.id}>
-                        {g.title} — {AREA_LABELS[g.area as GrantArea] || g.area}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {projectType === 'edital' ? (
+                  <Select value={selectedGrant} onValueChange={setSelectedGrant}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um edital" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {grants.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.title} — {AREA_LABELS[g.area as GrantArea] || g.area}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Emendas Parlamentares são focadas em captação direta. A IA usará o domínio <strong>{AREA_LABELS[selectedDomain]}</strong> para guiar a escrita.</p>
+                    <Input placeholder="Qual o objetivo principal desta emenda? (Ex: Reforma da Praça X)" value={briefing} onChange={(e) => setBriefing(e.target.value)} />
+                  </div>
+                )}
               </div>
 
-              {showRecommendations && (
+              {showRecommendations && projectType === 'edital' && (
                 <div className="p-4 border rounded-lg bg-accent/5 border-accent/20 space-y-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="h-4 w-4 text-accent" />
@@ -380,25 +470,19 @@ const Assistente = () => {
                           <div>
                             <p className="font-medium text-sm leading-tight">{match.grant.title}</p>
                             <p className="text-xs text-muted-foreground mt-1 max-w-[95%]">{match.reason}</p>
-                            <Button 
-                              variant="link" 
-                              className="h-auto p-0 text-xs mt-1 text-accent"
-                              onClick={() => setSelectedGrant(match.grant.id)}
-                            >
-                              Selecionar este edital
-                            </Button>
+                            <Button variant="link" className="h-auto p-0 text-xs mt-1 text-accent" onClick={() => setSelectedGrant(match.grant.id)}>Selecionar este edital</Button>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground text-center">Nenhuma recomendação forte encontrada para o seu perfil no momento.</p>
+                    <p className="text-xs text-muted-foreground text-center">Nenhuma recomendação encontrada.</p>
                   )}
                 </div>
               )}
             </div>
             <div className="flex justify-end">
-              <Button disabled={!selectedGrant} onClick={() => setCurrentStep(2)}>
+              <Button disabled={projectType === 'edital' ? !selectedGrant : !briefing.trim()} onClick={() => setCurrentStep(2)}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -421,62 +505,30 @@ const Assistente = () => {
                 Documento Base (PDF)
                 <Badge variant="secondary" className="text-[10px] ml-1">Opcional</Badge>
               </Label>
-              <p className="text-xs text-muted-foreground">
-                Envie um edital, projeto de referência ou qualquer documento PDF. A IA usará como base para construir o projeto.
-              </p>
-
               {!pdfFile ? (
-                <div
-                  className="glass-card border-2 border-dashed border-primary/30 rounded-xl p-10 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-all duration-300 group"
-                  onClick={() => fileInputRef.current?.click()}
-                >
+                <div className="glass-card border-2 border-dashed border-primary/30 rounded-xl p-10 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-all duration-300 group" onClick={() => fileInputRef.current?.click()}>
                   <Upload className="h-10 w-10 mx-auto mb-4 text-primary/60 group-hover:text-accent transition-colors duration-300 group-hover:-translate-y-1 transform" />
                   <p className="text-base font-semibold text-foreground">Clique para enviar um PDF</p>
-                  <p className="text-sm text-muted-foreground mt-2">Editais, referências, metas ou estatutos (Máximo 20MB)</p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="application/pdf"
-                    className="hidden"
-                    onChange={handlePdfSelect}
-                  />
+                  <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handlePdfSelect} />
                 </div>
               ) : (
                 <div className="flex items-center gap-3 p-4 border rounded-lg bg-accent/5 border-accent/20">
                   <FileText className="h-8 w-8 text-accent shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{pdfFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
-                      {pdfBase64 && <span className="text-accent ml-2">✓ Pronto para envio</span>}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={removePdf} className="shrink-0">
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <Button variant="ghost" size="icon" onClick={removePdf}><X className="h-4 w-4" /></Button>
                 </div>
               )}
             </div>
-
             <div className="space-y-2">
               <Label>O que você pretende fazer neste projeto?</Label>
-              <Textarea
-                rows={5}
-                placeholder="Descreva brevemente a ideia do seu projeto..."
-                value={briefing}
-                onChange={(e) => setBriefing(e.target.value)}
-              />
+              <Textarea rows={5} placeholder="Descreva brevemente a ideia do seu projeto..." value={briefing} onChange={(e) => setBriefing(e.target.value)} />
             </div>
-            <Button variant="outline" className="border-accent text-accent hover:bg-accent/10">
-              <Sparkles className="h-4 w-4 mr-2" /> Sugerir com IA
-            </Button>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
-              </Button>
-              <Button disabled={!briefing.trim()} onClick={() => { setCurrentStep(3); handleGenerate(); }}>
-                Gerar Projeto <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+              <Button variant="outline" onClick={() => setCurrentStep(1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
+              <Button disabled={!briefing.trim()} onClick={() => { setCurrentStep(3); handleGenerate(); }}>Gerar Projeto <ChevronRight className="h-4 w-4 ml-1" /></Button>
             </div>
           </CardContent>
         </Card>
@@ -485,31 +537,9 @@ const Assistente = () => {
 
       {currentStep === 3 && isGenerating && (
         <motion.div key="step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} transition={{ duration: 0.5 }}>
-        <Card className="glass-card shadow-2xl border-primary/30 overflow-hidden relative">
-          <div className="absolute inset-0 shimmer pointer-events-none" />
-          <CardContent className="py-24 text-center space-y-6 relative z-10">
-            <Loader2 className="h-16 w-16 animate-spin mx-auto text-primary" />
-            <div>
-              <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">A IA está estruturando seu projeto...</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {pdfFile
-                  ? "Analisando documento base + Cofre + Edital + sua ideia"
-                  : "Combinando dados do Cofre + Edital + sua ideia"}
-              </p>
-            </div>
-            <div className="flex justify-center gap-2 mt-4 flex-wrap">
-              {[
-                "Analisando Cofre",
-                "Lendo Edital",
-                ...(pdfFile ? ["Processando PDF"] : []),
-                "Gerando Texto",
-              ].map((s, i) => (
-                <Badge key={s} variant="secondary" className={i <= generationPhase ? "bg-accent/15 text-accent" : ""}>
-                  {i <= generationPhase && <Check className="h-3 w-3 mr-1" />} {s}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
+        <Card className="glass-card shadow-2xl border-primary/30 py-24 text-center space-y-6">
+          <Loader2 className="h-16 w-16 animate-spin mx-auto text-primary" />
+          <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">A IA está estruturando seu projeto...</p>
         </Card>
         </motion.div>
       )}
@@ -518,99 +548,61 @@ const Assistente = () => {
         <motion.div key="step4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <Card className="glass-card shadow-lg border-primary/10">
-              <CardHeader>
-                <CardTitle>Projeto Gerado</CardTitle>
-                <CardDescription>Edite livremente o conteúdo abaixo.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="font-semibold">Título</Label>
-                  <Input value={generatedContent.title} onChange={(e) => setGeneratedContent((p) => ({ ...p, title: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold">Justificativa</Label>
-                  <Textarea rows={6} value={generatedContent.justification} onChange={(e) => setGeneratedContent((p) => ({ ...p, justification: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold">Objetivos</Label>
-                  <Textarea rows={8} value={generatedContent.objectives} onChange={(e) => setGeneratedContent((p) => ({ ...p, objectives: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-semibold">Metodologia</Label>
-                  <Textarea rows={8} value={generatedContent.methodology} onChange={(e) => setGeneratedContent((p) => ({ ...p, methodology: e.target.value }))} />
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
-                  </Button>
-                  <Button 
-                    onClick={handleSaveProject} 
-                    disabled={isSaving}
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground flex-1"
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Check className="h-4 w-4 mr-2" />
-                    )}
-                    {isSaving ? "Finalizando..." : "Finalizar Projeto"}
-                  </Button>
-                </div>
-              </CardContent>
+            <Card className="glass-card shadow-lg border-primary/10 p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="font-semibold">Título</Label>
+                <Input value={generatedContent.title} onChange={(e) => setGeneratedContent(p => ({ ...p, title: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Justificativa</Label>
+                <Textarea rows={6} value={generatedContent.justification} onChange={(e) => setGeneratedContent(p => ({ ...p, justification: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Objetivos</Label>
+                <Textarea rows={8} value={generatedContent.objectives} onChange={(e) => setGeneratedContent(p => ({ ...p, objectives: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Metodologia</Label>
+                <Textarea rows={8} value={generatedContent.methodology} onChange={(e) => setGeneratedContent(p => ({ ...p, methodology: e.target.value }))} />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={() => setCurrentStep(2)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
+                <Button variant="outline" onClick={handlePreEvaluate} className="border-accent text-accent hover:bg-accent/5">
+                  {isEvaluating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />} Pré-Avaliar
+                </Button>
+                <Button onClick={handleSaveProject} disabled={isSaving} className="bg-accent hover:bg-accent/90 flex-1">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />} Finalizar Projeto
+                </Button>
+              </div>
             </Card>
           </div>
 
-          <Card className="glass-card shadow-lg border-primary/10 flex flex-col h-[calc(100vh-16rem)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Bot className="h-4 w-4 text-accent" /> Chat com IA
-              </CardTitle>
-              <CardDescription className="text-xs">Peça alterações no texto gerado</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto space-y-3 mb-3">
-                {chatMessages.length === 0 && (
-                  <div className="text-center text-sm text-muted-foreground py-8">
-                    <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Peça alterações como:</p>
-                    <p className="italic mt-1">"Torne a justificativa mais técnica"</p>
-                  </div>
-                )}
-                {chatMessages.map((msg, i) => (
-                  <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    {msg.role === "assistant" && <Bot className="h-5 w-5 text-accent mt-1 shrink-0" />}
-                    <div className={`rounded-lg px-3 py-2 text-sm max-w-[85%] ${
-                      msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                    }`}>
-                      {msg.content}
+          <div className="space-y-4 h-[calc(100vh-16rem)]">
+            <AnimatePresence mode="wait">
+              {showEvaluation ? (
+                <motion.div key="eval" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="h-full">
+                  <ProjectEvaluationResults results={evaluationResults} isLoading={isEvaluating} projectId={activeProjectId || ""} onClose={() => setShowEvaluation(false)} />
+                </motion.div>
+              ) : (
+                <Card key="chat" className="glass-card shadow-lg border-primary/10 flex flex-col h-full">
+                  <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bot className="h-4 w-4 text-accent" /> Chat com IA</CardTitle></CardHeader>
+                  <CardContent className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 overflow-y-auto space-y-3 mb-3">
+                      {chatMessages.map((msg, i) => (
+                        <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                          <div className={`rounded-lg px-3 py-2 text-sm max-w-[85%] ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{msg.content}</div>
+                        </div>
+                      ))}
                     </div>
-                    {msg.role === "user" && <User className="h-5 w-5 text-primary mt-1 shrink-0" />}
-                  </div>
-                ))}
-                {isChatLoading && (
-                  <div className="flex gap-2 justify-start">
-                    <Bot className="h-5 w-5 text-accent mt-1 shrink-0" />
-                    <div className="rounded-lg px-3 py-2 text-sm bg-muted">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <div className="flex gap-2">
+                      <Input placeholder="Peça uma alteração..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendChat()} />
+                      <Button onClick={handleSendChat} size="icon" className="bg-accent"><Send className="h-4 w-4" /></Button>
                     </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Peça uma alteração..."
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-                  disabled={isChatLoading}
-                />
-                <Button size="icon" onClick={handleSendChat} disabled={isChatLoading} className="bg-accent hover:bg-accent/90 shrink-0">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
         </motion.div>
       )}
