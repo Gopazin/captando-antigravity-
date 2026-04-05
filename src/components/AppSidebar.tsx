@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const simpleItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Radar de Editais", url: "/editais", icon: Radar, premium: true },
   { title: "Cofre de Identidade", url: "/cofre", icon: Vault },
 ];

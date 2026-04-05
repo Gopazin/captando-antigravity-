@@ -201,14 +201,14 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <button
               className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden md:block"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/auth")}
             >
               Login
             </button>
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg px-4"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/auth")}
             >
               Começar Grátis
             </Button>
@@ -227,7 +227,7 @@ export default function LandingPage() {
             <a href="#funcionalidades" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Funcionalidades</a>
             <a href="#ia" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Inteligência Artificial</a>
             <a href="#planos" className="block text-sm text-gray-600" onClick={() => setMobileMenuOpen(false)}>Planos</a>
-            <button className="block text-sm text-gray-600" onClick={() => navigate("/")}>Login</button>
+            <button className="block text-sm text-gray-600" onClick={() => navigate("/auth")}>Login</button>
           </div>
         )}
       </nav>
@@ -285,7 +285,7 @@ export default function LandingPage() {
             <Button
               size="lg"
               className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 text-base rounded-xl shadow-lg shadow-emerald-900/40 transition-all"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/auth")}
             >
               Começar Grátis <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -440,7 +440,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl"
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/auth")}
                 >
                   Experimentar a IA <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
@@ -603,7 +603,7 @@ export default function LandingPage() {
                           : "border-gray-200 text-gray-700 hover:bg-gray-50"
                       }`}
                       variant={plan.highlighted ? "default" : "outline"}
-                      onClick={() => navigate("/")}
+                      onClick={() => navigate("/auth")}
                     >
                       {plan.cta}
                     </Button>
@@ -633,7 +633,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-10 text-base rounded-xl shadow-lg shadow-emerald-900/40"
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/auth")}
               >
                 Criar Conta Grátis <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
